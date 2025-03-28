@@ -7,6 +7,7 @@ defmodule RainerBlogBackend.Application do
 
   @impl true
   def start(_type, _args) do
+
     children = [
       RainerBlogBackendWeb.Telemetry,
       RainerBlogBackend.Repo,
@@ -17,7 +18,7 @@ defmodule RainerBlogBackend.Application do
       # Start a worker by calling: RainerBlogBackend.Worker.start_link(arg)
       # {RainerBlogBackend.Worker, arg},
       # Start to serve requests, typically the last entry
-      RainerBlogBackendWeb.Endpoint
+      RainerBlogBackendWeb.Endpoint,
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

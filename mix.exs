@@ -34,7 +34,7 @@ defmodule RainerBlogBackend.MixProject do
     [
       {:phoenix, "~> 1.7.18"},
       {:phoenix_ecto, "~> 4.5"},
-      {:ecto_sql, "~> 3.10"},
+      {:ecto_sql, "~> 3.12"},
       {:postgrex, ">= 0.0.0"},
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:swoosh, "~> 1.5"},
@@ -43,7 +43,8 @@ defmodule RainerBlogBackend.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:mongodb_ecto, "~> 2.1.1"}
     ]
   end
 
