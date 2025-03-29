@@ -5,8 +5,21 @@ defmodule RainerBlogBackendWeb.Router do
     plug :accepts, ["json"]
   end
 
+
+  pipeline :auth do
+    plug :api
+  end
+
   scope "/api", RainerBlogBackendWeb do
     pipe_through :api
+
+    get "/hello", HelloController, :hello
+    get "/hello/echo", HelloController, :echo
+  end
+
+  scope "/api", RainerBlogBackendWeb do
+    pipe_through [:api, :auth]
+
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

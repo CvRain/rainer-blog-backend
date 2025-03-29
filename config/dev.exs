@@ -2,12 +2,13 @@ import Config
 
 # Configure your database
 config :rainer_blog_backend, RainerBlogBackend.Repo,
-  username: "cvrain",
-  password: "qwe812928",
+  username: "postgres",
+  password: "your_password",
   hostname: "ecs.cloudvl.cn",
   database: "rainer_blog",
   pool_size: 10,
-  auth_source: "admin"
+  stacktrace: true,
+  show_sensitive_data_on_connection_error: true
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
