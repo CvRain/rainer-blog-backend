@@ -15,6 +15,7 @@ defmodule RainerBlogBackendWeb.Router do
 
     get "/hello", HelloController, :hello
     get "/hello/echo", HelloController, :echo
+    get "/hello/weather", HelloController, :add_weather
   end
 
   scope "/api", RainerBlogBackendWeb do

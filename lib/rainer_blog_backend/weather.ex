@@ -17,4 +17,14 @@ defmodule RainerBlogBackend.Weather do
     |> cast(attrs, [:city, :temp_low, :temp_high, :prcp])
     |> validate_required([:city, :temp_low, :temp_high, :prcp])
   end
+
+
+  def random_weather() do
+    %RainerBlogBackend.Weather{
+      city: "London",
+      temp_low: Enum.random(0..10),
+      temp_high: Enum.random(10..20),
+      prcp: 0.05
+    }
+  end
 end

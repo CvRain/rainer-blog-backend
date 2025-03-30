@@ -33,4 +33,52 @@ defmodule RainerBlogBackendWeb.HelloController do
 
     json(conn, response)
   end
+
+  def add_weather(conn, _params) do
+    %RainerBlogBackend.Weather{
+      city: "New York",
+      temp_low: Enum.random(1..20),
+      temp_high: Enum.random(21..40),
+      prcp: Enum.random(1..10) / 10
+    }
+    |> RainerBlogBackend.Repo.insert()
+
+    weather =
+      RainerBlogBackend.Weather
+      |> Ecto.Query.last()
+      |> RainerBlogBackend.Repo.one()
+
+    response = %{
+      code: 200,
+      message: "Weather added",
+      result: "200Ok",
+      data: %{
+        city: weather.city,
+        temp_low: weather.temp_low,
+        temp_high: weather.temp_high,
+        prcp: weather.prcp
+      }
+    }
+
+    json(conn, response)
+  end
+
+  def last_weather(conn, _params) do
+    weather = RainerBlogBackend.Weather
+    |> Ecto.Query.last()
+    |> RainerBlogBackend.Repo.one()
+
+    response = %{
+      code: 200,
+      message: "Last weather",
+      result: "200Ok",
+      data: %{
+        city: weather.city,
+        temp_low: weather.temp_low,
+        temp_high: weather.temp_high,
+        prcp: weather.prcp
+      }
+    }
+    json(conn, response)
+  end
 end
