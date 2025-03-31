@@ -1,6 +1,8 @@
 defmodule RainerBlogBackendWeb.HelloController do
   use RainerBlogBackendWeb, :controller
 
+  import Ecto.Query
+
   def hello(conn, _params) do
     response = %{
       code: 200,
@@ -13,8 +15,10 @@ defmodule RainerBlogBackendWeb.HelloController do
   end
 
   def echo(conn, params) do
+    msg = Map.get(params, "msg") || Map.get(params, :msg)
+
     response =
-      with {:ok, msg} <- Map.fetch(params, :msg) do
+      if msg do
         %{
           code: 200,
           message: msg,
@@ -22,51 +26,51 @@ defmodule RainerBlogBackendWeb.HelloController do
           timestamp: DateTime.utc_now()
         }
       else
-        _ ->
-          %{
-            code: 400,
-            message: "Invalid params",
-            result: "400BadRequest",
-            timestamp: DateTime.utc_now()
-          }
+        %{
+          code: 400,
+          message: "Invalid params",
+          result: "400BadRequest",
+          timestamp: DateTime.utc_now()
+        }
       end
 
     json(conn, response)
   end
 
   def add_weather(conn, _params) do
-    %RainerBlogBackend.Weather{
-      city: "New York",
-      temp_low: Enum.random(1..20),
-      temp_high: Enum.random(21..40),
-      prcp: Enum.random(1..10) / 10
-    }
-    |> RainerBlogBackend.Repo.insert()
+    body_request = conn.body_params
 
+    case RainerBlogBackend.Repo.insert(%RainerBlogBackend.Weather{
+           city: body_request["city"],
+           temp_low: body_request["temp_low"],
+           temp_high: body_request["temp_high"],
+           prcp: body_request["prcp"]
+         }) do
+      {:ok, weather} ->
+        json(
+          conn,
+          %{
+            code: 201,
+            message: "Weather added",
+            result: "201Created",
+            data: weather
+          }
+        )
+
+      {:error, changeset} ->
+        json(conn, %{
+          code: 400,
+          message: "Invalid data: #{inspect(changeset.errors)}",
+          result: "400BadRequest"
+        })
+    end
+  end
+
+  def last_weather(conn, _params) do
     weather =
       RainerBlogBackend.Weather
       |> Ecto.Query.last()
       |> RainerBlogBackend.Repo.one()
-
-    response = %{
-      code: 200,
-      message: "Weather added",
-      result: "200Ok",
-      data: %{
-        city: weather.city,
-        temp_low: weather.temp_low,
-        temp_high: weather.temp_high,
-        prcp: weather.prcp
-      }
-    }
-
-    json(conn, response)
-  end
-
-  def last_weather(conn, _params) do
-    weather = RainerBlogBackend.Weather
-    |> Ecto.Query.last()
-    |> RainerBlogBackend.Repo.one()
 
     response = %{
       code: 200,
@@ -79,6 +83,13 @@ defmodule RainerBlogBackendWeb.HelloController do
         prcp: weather.prcp
       }
     }
+
     json(conn, response)
+  end
+
+  def one_weather(conn, param) do
+    weather_id = Map.get(param, "id") || Map.get(param, :id)
+
+
   end
 end

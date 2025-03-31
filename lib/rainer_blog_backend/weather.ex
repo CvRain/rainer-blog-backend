@@ -2,6 +2,8 @@ defmodule RainerBlogBackend.Weather do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {Jason.Encoder, only: [:city, :temp_low, :temp_high, :prcp]}
+
   schema "weather" do
     field :city, :string
     field :temp_low, :integer
@@ -16,15 +18,5 @@ defmodule RainerBlogBackend.Weather do
     weather
     |> cast(attrs, [:city, :temp_low, :temp_high, :prcp])
     |> validate_required([:city, :temp_low, :temp_high, :prcp])
-  end
-
-
-  def random_weather() do
-    %RainerBlogBackend.Weather{
-      city: "London",
-      temp_low: Enum.random(0..10),
-      temp_high: Enum.random(10..20),
-      prcp: 0.05
-    }
   end
 end

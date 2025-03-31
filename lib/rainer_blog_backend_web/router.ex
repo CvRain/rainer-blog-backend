@@ -1,4 +1,5 @@
 defmodule RainerBlogBackendWeb.Router do
+  alias Hex.API.User
   use RainerBlogBackendWeb, :router
 
   pipeline :api do
@@ -15,12 +16,22 @@ defmodule RainerBlogBackendWeb.Router do
 
     get "/hello", HelloController, :hello
     get "/hello/echo", HelloController, :echo
-    get "/hello/weather", HelloController, :add_weather
+    post "/hello/weather", HelloController, :add_weather
   end
 
   scope "/api", RainerBlogBackendWeb do
     pipe_through [:api, :auth]
 
+  end
+
+  scope "/api/user", RainerBlogBackendWeb do
+    pipe_through :api
+
+    post "/auth/login", UserController, :login
+    post "/auth/register", UserController, :register
+    get "/one", UserController, :show
+    patch "/one", UserController, :update
+    put "/one", UserController, :update
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
