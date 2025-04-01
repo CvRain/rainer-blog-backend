@@ -1,8 +1,10 @@
 defmodule RainerBlogBackend.User do
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
 
   @email_regex ~r/^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/
+  @derive {Jason.Encoder, only: [:id, :name, :email, :password, :signature, :avatar, :background]}
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -32,5 +34,33 @@ defmodule RainerBlogBackend.User do
     # 唯一性约束（需配合数据库唯一索引）
     |> unique_constraint(:email)
     |> unique_constraint(:name)
+  end
+
+  def add_user(name, email, password) do
+    user = %RainerBlogBackend.User{
+      name: name,
+      email: email,
+      password: password
+    }
+
+    case RainerBlogBackend.Repo.insert(user) do
+      {:ok, user} ->
+        {:ok, user}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  def exist_by_id(id) do
+
+  end
+
+  def exist_by_email(email) do
+
+  end
+
+  def exist_by_name(name) do
+
   end
 end
