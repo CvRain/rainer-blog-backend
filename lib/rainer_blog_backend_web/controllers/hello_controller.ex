@@ -86,10 +86,4 @@ defmodule RainerBlogBackendWeb.HelloController do
 
     json(conn, response)
   end
-
-  def one_weather(conn, param) do
-    weather_id = Map.get(param, "id") || Map.get(param, :id)
-
-
-  end
 end

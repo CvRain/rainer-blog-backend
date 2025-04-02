@@ -1,9 +1,8 @@
 defmodule RainerBlogBackendWeb.UserController do
   use RainerBlogBackendWeb, :controller
+  alias RainerBlogBackendWeb.RequestSchema.RegisterRequest
   alias RainerBlogBackend.User
-  alias RainerBlogBackend.Repo
-  import Comeonin.Bcrypt, only: [checkpw: 2, hashpwsalt: 1]
-  import RainerBlogBackend.Guardian, only: [encode_and_sign: 1] # 假设使用Guardian库生成JWT
+  alias RainerBlogBackendWeb.Response
 
   def show(conn, params) do
   end
@@ -11,39 +10,59 @@ defmodule RainerBlogBackendWeb.UserController do
   def update(conn, params) do
   end
 
-  def login(conn, %{"email" => email, "password" => password}) do
-    case Repo.get_by(User, email: email) do
-      nil ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{result: "error", message: "用户不存在", code: 401, data: nil})
+  def login(conn, params) do
+  end
 
-      user ->
-        if checkpw(password, user.password) do
-          {:ok, token, _claims} = encode_and_sign(user)
-          conn
-          |> put_status(:ok)
-          |> json(%{result: "success", message: "登录成功", code: 200, data: %{token: token, user: user}})
+  def register(conn, params) do
+    case RegisterRequest.changeset(params) do
+      %Ecto.Changeset{valid?: true} = changeset ->
+        user_params = Ecto.Changeset.apply_changes(changeset)
+
+        user_attrs =
+          %{
+            name: user_params.name,
+            email: user_params.email,
+            password: user_params.password
+          }
+
+        with false <- User.exist_by_email(user_params.email),
+             false <- User.exist_by_name(user_params.name),
+             {:ok, user} <- User.add_user(user_attrs) do
+          json(
+            conn,
+            Response.base_response(201, "201Created", "User created successfully", %{id: user.id})
+          )
         else
-          conn
-          |> put_status(:unauthorized)
-          |> json(%{result: "error", message: "密码错误", code: 401, data: nil})
+          true ->
+            json(
+              conn,
+              Response.base_response(409, "409Conflict", "Email or username already exists", %{})
+            )
+
+          {:error, changeset} ->
+            json(
+              conn,
+              Response.base_response(400, "400BadRequest", "Validation failed", %{
+                errors: transform_errors(changeset)
+              })
+            )
         end
+
+      %Ecto.Changeset{valid?: false} = changeset ->
+        json(
+          conn,
+          Response.base_response(400, "400BadRequest", "Invalid request parameters", %{
+            errors: transform_errors(changeset)
+          })
+        )
     end
   end
 
-  def register(conn, %{"name" => name, "email" => email, "password" => password}) do
-    hashed_password = hashpwsalt(password)
-    case User.add_user(name, email, hashed_password) do
-      {:ok, user} ->
-        conn
-        |> put_status(:created)
-        |> json(%{result: "success", message: "注册成功", code: 201, data: user})
-
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{result: "error", message: "注册失败", code: 422, data: changeset.errors})
-    end
+  defp transform_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
+        String.replace(acc, "%{#{key}}", to_string(value))
+      end)
+    end)
   end
 end

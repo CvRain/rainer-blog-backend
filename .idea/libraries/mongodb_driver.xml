@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="mongodb_driver" type="mix">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/mongodb_driver/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/mongodb_driver/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/mongodb_driver/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/mongodb_driver/ebin" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/deps/mongodb_driver/lib" />
+      <root url="file://$PROJECT_DIR$/deps/mongodb_driver/lib" />
+    </SOURCES>
+  </library>
+</component>

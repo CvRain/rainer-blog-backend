@@ -23,7 +23,6 @@ defmodule RainerBlogBackend.User do
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
   def changeset(user, attrs) do
     user
     |> cast(attrs, [:name, :email, :password, :signature, :avatar, :background])
@@ -36,31 +35,24 @@ defmodule RainerBlogBackend.User do
     |> unique_constraint(:name)
   end
 
-  def add_user(name, email, password) do
-    user = %RainerBlogBackend.User{
-      name: name,
-      email: email,
-      password: password
-    }
+  def add_user(attrs) do
+    hashed_password = Bcrypt.hash_pwd_salt(attrs[:password] || attrs["password"])
 
-    case RainerBlogBackend.Repo.insert(user) do
-      {:ok, user} ->
-        {:ok, user}
-
-      {:error, changeset} ->
-        {:error, changeset}
-    end
+    %RainerBlogBackend.User{}
+    |> changeset(attrs)
+    |> Ecto.Changeset.put_change(:password, hashed_password)
+    |> RainerBlogBackend.Repo.insert()
   end
 
   def exist_by_id(id) do
-
+    RainerBlogBackend.Repo.exists?(from u in RainerBlogBackend.User, where: u.id == ^id)
   end
 
   def exist_by_email(email) do
-
+    RainerBlogBackend.Repo.exists?(from u in RainerBlogBackend.User, where: u.email == ^email)
   end
 
   def exist_by_name(name) do
-
+    RainerBlogBackend.Repo.exists?(from u in RainerBlogBackend.User, where: u.name == ^name)
   end
 end

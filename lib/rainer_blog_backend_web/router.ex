@@ -1,5 +1,4 @@
 defmodule RainerBlogBackendWeb.Router do
-  alias Hex.API.User
   use RainerBlogBackendWeb, :router
 
   pipeline :api do
