@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "gH49BEGN52o=",
+  "success": true,
+  "projectFilePath": "/mnt/workspace/Project/rainer_blog_backend/RainerBlog.csproj",
+  "expectedPackageFiles": [
+    "/home/cvrain/.nuget/packages/microsoft.aspnetcore.openapi/9.0.3/microsoft.aspnetcore.openapi.9.0.3.nupkg.sha512",
+    "/home/cvrain/.nuget/packages/microsoft.openapi/1.6.17/microsoft.openapi.1.6.17.nupkg.sha512",
+    "/home/cvrain/.nuget/packages/microsoft.aspnetcore.app.ref/9.0.3/microsoft.aspnetcore.app.ref.9.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}
