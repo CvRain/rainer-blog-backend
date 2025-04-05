@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RainerBlog;
 using RainerBlog.Mutation;
 using RainerBlog.Query;
 
@@ -12,7 +13,9 @@ builder.Services
     .AddOpenApi()
     .AddGraphQLServer()
     .AddQueryType<BaseQuery>()
+    .AddTypeExtension<UserQuery>()
     .AddMutationType<BaseMutation>()
+    .AddTypeExtension<UserMutation>()
     .AddProjections()
     .AddFiltering()
     .AddSorting()
