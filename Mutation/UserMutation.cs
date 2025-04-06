@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RainerBlog.Types;
+using RainerBlog.Utils;
 
 namespace RainerBlog.Mutation;
 
@@ -28,8 +29,9 @@ public class UserMutation
         {
             return new RegisterUserPayload(null, "Name already exists");
         }
-        
-        var user = new User(name, email, password);
+
+        var hashPassword = PasswordHasher.HashPassword(password);
+        var user = new User(name, email, hashPassword);
         try
         {
             context.Users.Add(user);

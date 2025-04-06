@@ -1,16 +1,70 @@
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using RainerBlog.Types;
+using RainerBlog.Utils;
 
 namespace RainerBlog.Query;
 
 [ExtendObjectType(typeof(BaseQuery))]
 public class UserQuery
 {
-    [UsePaging]
-    [UseProjection]
-    [UseFiltering]
-    [UseSorting]
-    public IQueryable<User> GetUsers([Service] BlogDbContext context)
+    // [UsePaging]
+    // [UseProjection]
+    // [UseFiltering]
+    // [UseSorting]
+    // public IQueryable<User> GetUsers([Service] BlogDbContext context)
+    // {
+    //     return context.Users;
+    // }
+
+    public IQueryable<User> GetUserById([Service] BlogDbContext context, string id)
     {
-        return context.Users;
+        return context.Users.Where(u => u.Id == id);
+    }
+
+    public IQueryable<User> GetUserByEmail([Service] BlogDbContext context, string email)
+    {
+        return context.Users.Where(u => u.Email == email);
+    }
+
+    public BaseResponse UserExist([Service] BlogDbContext context)
+    {
+        var isExist = context.Users.Any();
+        return new BaseResponse
+        {
+            Code = isExist ? 200 : 404,
+            Message = isExist ? "User exist" : "User not exist",
+            Result = isExist ? "200Ok" : "404NotFound"
+        };
+    }
+
+    public BaseResponse UserLogin([Service] BlogDbContext context, string email, string password)
+    {
+        var user = context.Users.FirstOrDefault(u => u.Email == email);
+        if (user == null)
+        {
+            return new BaseResponse
+            {
+                Code = 404,
+                Message = "User not exist",
+                Result = "404NotFound"
+            };
+        }
+
+        if (PasswordHasher.VerifyPassword(user.Password, password))
+        {
+            return new BaseResponse
+            {
+                Code = 200,
+                Message = "Login success",
+                Result = "200Ok"
+            };
+        }
+
+        return new BaseResponse
+        {
+            Code = 401,
+            Message = "Password error",
+            Result = "401Unauthorized"
+        };
     }
 }
