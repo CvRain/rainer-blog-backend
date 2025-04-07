@@ -16,6 +16,18 @@ public class UserQuery
     //     return context.Users;
     // }
 
+    public CommonResponse<User> GetRandomUser()
+    {
+        var user = new User("test", "test@test.com", "this_is_password");
+        var response = new CommonResponse<User>(data: user)
+        {
+            Code = 201,
+            Message = "Random user",
+            Result = "201Created",
+        };
+        return response;
+    }
+
     public IQueryable<User> GetUserById([Service] BlogDbContext context, string id)
     {
         return context.Users.Where(u => u.Id == id);

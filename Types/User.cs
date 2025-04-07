@@ -37,4 +37,9 @@ public class User
         CreateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         UpdateTime = CreateTime;
     }
+
+    public static bool UserExist(BlogDbContext context)
+    {
+        return context.Users.Any();
+    }
 }
