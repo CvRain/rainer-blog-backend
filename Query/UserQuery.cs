@@ -49,12 +49,17 @@ public class UserQuery
         };
     }
 
-    public BaseResponse UserLogin([Service] BlogDbContext context, string email, string password)
+    public record LoginToken(string? Token);
+
+    public CommonResponse<LoginToken> UserLogin(
+        [Service] BlogDbContext context,
+        [Service] JwtService jwtService,
+        string email, string password)
     {
         var user = context.Users.FirstOrDefault(u => u.Email == email);
         if (user == null)
         {
-            return new BaseResponse
+            return new CommonResponse<LoginToken>(data: new LoginToken(null))
             {
                 Code = 404,
                 Message = "User not exist",
@@ -62,21 +67,22 @@ public class UserQuery
             };
         }
 
-        if (PasswordHasher.VerifyPassword(user.Password, password))
+        if (!PasswordHasher.VerifyPassword(user.Password, password))
         {
-            return new BaseResponse
+            return new CommonResponse<LoginToken>(data: new LoginToken(null))
             {
-                Code = 200,
-                Message = "Login success",
-                Result = "200Ok"
+                Code = 401,
+                Message = "Password error",
+                Result = "401Unauthorized"
             };
         }
 
-        return new BaseResponse
+        var token = jwtService.GenerateToken(user);
+        return new CommonResponse<LoginToken>(data: new LoginToken(token))
         {
-            Code = 401,
-            Message = "Password error",
-            Result = "401Unauthorized"
+            Code = 200,
+            Message = "Login success",
+            Result = "200Ok"
         };
     }
 }
