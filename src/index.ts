@@ -1,33 +1,13 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { swagger } from "@elysiajs/swagger"
 
-class Note{
-  constructor(public data:string[] = ['hello note']){
-
-  }
-}
-
-class Response{
-  constructor(public code:number = 200, public message:string = 'success', public data:any = null){
-
-  }
-}
+import { hello } from "./controllers/hello";
 
 const app = new Elysia()
 .use(swagger())
+.use(hello)
 .get("/", ({path}) => "Hello Elysia" + path)
-.get("/hello", () => "Hello world!")
-.post("/hello", () => "Hello world!")
-.decorate("note", new Note())
-.get("/notes", ({note}) => note.data)
-.decorate("response", new Response())
-.get("/response", ({response}) => {
-  return {
-    code: response.code,
-    message: response.message,
-    data: response.data
-  };
-})
+
 .listen(3000);
 
 console.log(
