@@ -7,10 +7,16 @@
   },
   "dependencies": {
     "@elysiajs/swagger": "^1.2.2",
-    "elysia": "latest"
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.42.0",
+    "elysia": "latest",
+    "pg": "^8.14.1"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "@types/pg": "^8.11.13",
+    "bun-types": "latest",
+    "drizzle-kit": "^0.31.0",
+    "tsx": "^4.19.3"
   },
   "module": "src/index.js"
 }
