@@ -1,2 +1,0 @@
-ALTER TABLE "users" ALTER COLUMN "createTime" SET DEFAULT 1745326994943;--> statement-breakpoint
-ALTER TABLE "users" ALTER COLUMN "updateTime" SET DEFAULT 1745326994943;
