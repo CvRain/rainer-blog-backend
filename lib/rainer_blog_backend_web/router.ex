@@ -7,6 +7,8 @@ defmodule RainerBlogBackendWeb.Router do
 
   scope "/api", RainerBlogBackendWeb do
     pipe_through :api
+
+    resources "/users", UserController, only: [:create, :delete]
   end
 
   scope "/", RainerBlogBackendWeb do
