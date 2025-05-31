@@ -4,6 +4,7 @@ defmodule RainerBlogBackend.User do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+  @derive {Jason.Encoder, only: [:id, :name, :signature, :avatar, :background, :inserted_at, :updated_at]}
   schema "users" do
     field :name, :string
     field :signature, :string
@@ -18,7 +19,13 @@ defmodule RainerBlogBackend.User do
   def changeset(user, attrs) do
     user
     |> cast(attrs, [:name, :password, :avatar, :signature, :background])
-    |> validate_required([:name, :password, :avatar, :signature, :background])
+    |> validate_required([:name, :password])
     |> unique_constraint(:name)
+    |> put_password_hash()
   end
+
+  defp put_password_hash(%Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset) do
+    change(changeset, password: Bcrypt.hash_pwd_salt(password))
+  end
+  defp put_password_hash(changeset), do: changeset
 end

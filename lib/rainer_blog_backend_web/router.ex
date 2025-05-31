@@ -5,10 +5,11 @@ defmodule RainerBlogBackendWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/api", RainerBlogBackendWeb do
+  scope "/api/user", RainerBlogBackendWeb do
     pipe_through :api
 
-    resources "/users", UserController, only: [:create, :delete]
+    post "/", UserController, :create
+    get "/one/:user_id", UserController, :show
   end
 
   scope "/", RainerBlogBackendWeb do
