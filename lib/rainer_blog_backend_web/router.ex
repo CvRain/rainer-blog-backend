@@ -13,7 +13,7 @@ defmodule RainerBlogBackendWeb.Router do
     get "/hello", UserController, :hello
   end
 
-  scope "/", RainerBlogBackendWeb do
+  scope "/api", RainerBlogBackendWeb do
     pipe_through :api
 
     get "/", PageController, :index

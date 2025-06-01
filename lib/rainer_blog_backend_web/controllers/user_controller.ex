@@ -3,41 +3,32 @@ defmodule RainerBlogBackendWeb.UserController do
 
   alias RainerBlogBackend.User
   alias RainerBlogBackend.Repo
+  alias RainerBlogBackendWeb.Types.BaseResponse
 
   def create(conn, _params) do
     request_body = conn.body_params
 
-    response = case {request_body["name"], request_body["password"]} do
-      {nil, _} -> %{
-        code: 400,
-        message: "name is required",
-        data: nil
-      }
-      {_, nil} -> %{
-        code: 400,
-        message: "password is required",
-        data: nil
-      }
-      {name, password} ->
-        changeset = User.changeset(%User{}, %{name: name, password: password})
+    response =
+      with {:ok, name} <- validate_param_present(request_body["name"], "name is required"),
+           {:ok, password} <-
+             validate_param_present(request_body["password"], "password is required"),
+           {:ok, user} <- User.create_user(name, password) do
+        BaseResponse.generate(201, "success", %{
+          id: user.id,
+          name: user.name,
+          inserted_at: user.inserted_at
+        })
+      else
+        {:error, message} when is_binary(message) ->
+          BaseResponse.generate(400, message, nil)
 
-        case Repo.insert(changeset) do
-          {:ok, user} -> %{
-            code: 201,
-            message: "success",
-            data: %{
-              id: user.id,
-              name: user.name,
-              inserted_at: user.inserted_at
-            }
-          }
-          {:error, changeset} -> %{
-            code: 422,
-            message: "validation error",
-            data: changeset_errors(changeset)
-          }
-        end
-    end
+        {:error, changeset} ->
+          BaseResponse.generate(422, "validation error", changeset_errors(changeset))
+
+        unexpected_error ->
+          IO.inspect(unexpected_error, label: "Unhandled error in create/2")
+          BaseResponse.generate(500, "An unexpected server error occurred.", nil)
+      end
 
     conn
     |> put_status(response.code)
@@ -45,20 +36,17 @@ defmodule RainerBlogBackendWeb.UserController do
   end
 
   def delete(conn, %{"id" => id}) do
-    response = case Repo.get(User, id) do
-      nil -> %{
-        code: 404,
-        message: "User not found",
-        data: nil
-      }
-      user ->
-        Repo.delete(user)
-        %{
-          code: 204,
-          message: "success",
-          data: nil
-        }
-    end
+    response =
+      case Repo.get(User, id) do
+        nil ->
+          BaseResponse.generate(404, "User not found", nil)
+
+        user ->
+          case Repo.delete(user) do
+            {:ok, _} -> BaseResponse.generate(204, "success", nil)
+            {:error, _} -> BaseResponse.generate(500, "failed to delete user", nil)
+          end
+      end
 
     conn
     |> put_status(response.code)
@@ -66,22 +54,35 @@ defmodule RainerBlogBackendWeb.UserController do
   end
 
   def show(conn, %{"user_id" => user_id}) do
-    response = case Repo.get(User, user_id) do
-      nil -> %{
-        code: 404,
-        message: "User not found",
-        data: nil
-      }
-      user -> %{
-        code: 200,
-        message: "success",
-        data: %{
-          id: user.id,
-          name: user.name,
-          inserted_at: user.inserted_at
-        }
-      }
-    end
+    response =
+      case user_id do
+        nil ->
+          BaseResponse.generate(400, "user_id is required", nil)
+
+        user_id ->
+          try do
+            case Repo.get(User, user_id) do
+              nil ->
+                BaseResponse.generate(404, "User not found", nil)
+
+              user ->
+                BaseResponse.generate(200, "success", %{
+                  id: user.id,
+                  name: user.name,
+                  inserted_at: user.inserted_at
+                })
+            end
+          rescue
+            Ecto.Query.CastError ->
+              BaseResponse.generate(400, "Invalid user_id format", nil)
+
+            e in Ecto.Query.CastError ->
+              BaseResponse.generate(400, "Invalid user_id format", e)
+
+            _ ->
+              BaseResponse.generate(500, "Internal server error", nil)
+          end
+      end
 
     conn
     |> put_status(response.code)
@@ -89,13 +90,11 @@ defmodule RainerBlogBackendWeb.UserController do
   end
 
   def hello(conn, _params) do
+    response = BaseResponse.generate(200, "success", "hello")
+
     conn
-    |> put_status(:ok)
-    |> json(%{
-      code: 200,
-      message: "success",
-      data: "hello"
-    })
+    |> put_status(response.code)
+    |> json(response)
   end
 
   defp changeset_errors(changeset) do
@@ -105,4 +104,9 @@ defmodule RainerBlogBackendWeb.UserController do
       end)
     end)
   end
+
+  defp validate_param_present(value, error_message) when is_nil(value) or value == "",
+    do: {:error, error_message}
+
+  defp validate_param_present(value, _error_message), do: {:ok, value}
 end

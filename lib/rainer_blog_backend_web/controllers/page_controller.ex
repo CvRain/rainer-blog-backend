@@ -1,18 +1,19 @@
 defmodule RainerBlogBackendWeb.PageController do
+  alias RainerBlogBackendWeb.Types.BaseResponse
   use RainerBlogBackendWeb, :controller
 
   @spec index(Plug.Conn.t(), any()) :: Plug.Conn.t()
   def index(conn, _params) do
-    #IO.puts("conn, #{inspect(conn)}")
-    response = %{
-      message: "Hello World",
+    data = %{
+      timestamp: DateTime.utc_now(),
       host: conn.host,
-      method: conn.method,
-      timestamp: DateTime.utc_now()
+      method: conn.method
     }
 
+    response = BaseResponse.generate(200, "Hello world", data)
+
     conn
-    |> put_status(200)
+    |> put_status(response.code)
     |> json(response)
   end
 end

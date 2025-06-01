@@ -1,6 +1,7 @@
 defmodule RainerBlogBackend.User do
   use Ecto.Schema
   import Ecto.Changeset
+  alias RainerBlogBackend.Repo
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -22,6 +23,13 @@ defmodule RainerBlogBackend.User do
     |> validate_required([:name, :password])
     |> unique_constraint(:name)
     |> put_password_hash()
+  end
+
+  def create_user(name, password) do
+    __MODULE__
+    |> struct()
+    |> changeset(%{name: name, password: password})
+    |> Repo.insert()
   end
 
   defp put_password_hash(%Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset) do
