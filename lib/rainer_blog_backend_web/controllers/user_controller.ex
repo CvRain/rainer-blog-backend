@@ -25,8 +25,7 @@ defmodule RainerBlogBackendWeb.UserController do
         {:error, changeset} ->
           BaseResponse.generate(422, "validation error", changeset_errors(changeset))
 
-        unexpected_error ->
-          IO.inspect(unexpected_error, label: "Unhandled error in create/2")
+        _ ->
           BaseResponse.generate(500, "An unexpected server error occurred.", nil)
       end
 

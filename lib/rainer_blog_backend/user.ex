@@ -5,7 +5,8 @@ defmodule RainerBlogBackend.User do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  @derive {Jason.Encoder, only: [:id, :name, :signature, :avatar, :background, :inserted_at, :updated_at]}
+  @derive {Jason.Encoder,
+           only: [:id, :name, :signature, :avatar, :background, :inserted_at, :updated_at]}
   schema "users" do
     field :name, :string
     field :signature, :string
@@ -25,6 +26,8 @@ defmodule RainerBlogBackend.User do
     |> put_password_hash()
   end
 
+  @spec create_user(String.t(), String.t()) ::
+          {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   def create_user(name, password) do
     __MODULE__
     |> struct()
@@ -32,8 +35,19 @@ defmodule RainerBlogBackend.User do
     |> Repo.insert()
   end
 
-  defp put_password_hash(%Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset) do
+  @spec delete_user(binary()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  def delete_user(id) do
+    case Repo.get(__MODULE__, id) do
+      nil -> {:error, "User not found"}
+      user -> Repo.delete(user)
+    end
+  end
+
+  defp put_password_hash(
+         %Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset
+       ) do
     change(changeset, password: Bcrypt.hash_pwd_salt(password))
   end
+
   defp put_password_hash(changeset), do: changeset
 end
