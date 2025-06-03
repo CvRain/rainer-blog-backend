@@ -1,4 +1,10 @@
 defmodule RainerBlogBackend.User do
+  @moduledoc """
+  用户模块，从配置文件读取用户信息
+  """
+
+  defstruct [:name, :password, :signature, :avatar, :background]
+
   use Ecto.Schema
   import Ecto.Changeset
   alias RainerBlogBackend.Repo
@@ -50,4 +56,36 @@ defmodule RainerBlogBackend.User do
   end
 
   defp put_password_hash(changeset), do: changeset
+
+  @doc """
+  获取用户信息
+  """
+  def get_user do
+    config = Application.get_env(:rainer_blog_backend, :user)
+    %__MODULE__{
+      name: config[:name],
+      password: config[:password],
+      signature: config[:signature],
+      avatar: config[:avatar],
+      background: config[:background]
+    }
+  end
+
+  @doc """
+  验证用户密码
+  """
+  def verify_password(password) do
+    user = get_user()
+    Bcrypt.verify_pass(password, user.password)
+  end
+
+  @doc """
+  更新用户信息
+  """
+  def update_user(attrs) do
+    config = Application.get_env(:rainer_blog_backend, :user)
+    new_config = Map.merge(config, attrs)
+    Application.put_env(:rainer_blog_backend, :user, new_config)
+    get_user()
+  end
 end

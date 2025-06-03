@@ -24,9 +24,6 @@ defmodule RainerBlogBackendWeb.UserController do
 
         {:error, changeset} ->
           BaseResponse.generate(422, "validation error", changeset_errors(changeset))
-
-        _ ->
-          BaseResponse.generate(500, "An unexpected server error occurred.", nil)
       end
 
     conn
@@ -52,35 +49,34 @@ defmodule RainerBlogBackendWeb.UserController do
     |> json(response)
   end
 
-  def show(conn, %{"user_id" => user_id}) do
+  def show(conn, _params) do
+    user = User.get_user()
+
+    response = BaseResponse.generate(200, "success", %{
+      name: user.name,
+      signature: user.signature,
+      avatar: user.avatar,
+      background: user.background
+    })
+
+    conn
+    |> put_status(response.code)
+    |> json(response)
+  end
+
+  def update(conn, params) do
     response =
-      case user_id do
-        nil ->
-          BaseResponse.generate(400, "user_id is required", nil)
-
-        user_id ->
-          try do
-            case Repo.get(User, user_id) do
-              nil ->
-                BaseResponse.generate(404, "User not found", nil)
-
-              user ->
-                BaseResponse.generate(200, "success", %{
-                  id: user.id,
-                  name: user.name,
-                  inserted_at: user.inserted_at
-                })
-            end
-          rescue
-            Ecto.Query.CastError ->
-              BaseResponse.generate(400, "Invalid user_id format", nil)
-
-            e in Ecto.Query.CastError ->
-              BaseResponse.generate(400, "Invalid user_id format", e)
-
-            _ ->
-              BaseResponse.generate(500, "Internal server error", nil)
-          end
+      with {:ok, attrs} <- validate_update_params(params),
+           user <- User.update_user(attrs) do
+        BaseResponse.generate(200, "success", %{
+          name: user.name,
+          signature: user.signature,
+          avatar: user.avatar,
+          background: user.background
+        })
+      else
+        {:error, message} ->
+          BaseResponse.generate(400, message, nil)
       end
 
     conn
@@ -108,4 +104,15 @@ defmodule RainerBlogBackendWeb.UserController do
     do: {:error, error_message}
 
   defp validate_param_present(value, _error_message), do: {:ok, value}
+
+  defp validate_update_params(params) do
+    allowed_fields = ["name", "signature", "avatar", "background"]
+    attrs = Map.take(params, allowed_fields)
+
+    if map_size(attrs) == 0 do
+      {:error, "No valid fields to update"}
+    else
+      {:ok, attrs}
+    end
+  end
 end
