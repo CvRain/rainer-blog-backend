@@ -24,12 +24,13 @@ defmodule RainerBlogBackendWeb.Router do
     pipe_through :api
   end
 
-  scope "/api/resource", RainerBlogBackendWeb do
-    pipe_through :api
-  end
-
   scope "/api/theme", RainerBlogBackendWeb do
     pipe_through :api
+
+    get "/", ThemeController, :index
+    get "/:id", ThemeController, :show
+    post "/", ThemeController, :create
+    delete "/:id", ThemeController, :delete
   end
 
   scope "/api", RainerBlogBackendWeb do
