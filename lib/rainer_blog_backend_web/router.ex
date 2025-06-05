@@ -8,6 +8,8 @@ defmodule RainerBlogBackendWeb.Router do
   scope "/api/user", RainerBlogBackendWeb do
     pipe_through :api
 
+    get "/check", UserController, :check_user
+    post "/", UserController, :create
     get "/", UserController, :show
     put "/", UserController, :update
   end

@@ -5,25 +5,30 @@ defmodule RainerBlogBackendWeb.UserController do
   alias RainerBlogBackend.Repo
   alias RainerBlogBackendWeb.Types.BaseResponse
 
-  def create(conn, _params) do
-    request_body = conn.body_params
+  def check_user(conn, _params) do
+    exists = User.user_exists?()
+    response = BaseResponse.generate(200, "success", %{exists: exists})
 
+    conn
+    |> put_status(response.code)
+    |> json(response)
+  end
+
+  def create(conn, params) do
     response =
-      with {:ok, name} <- validate_param_present(request_body["name"], "name is required"),
-           {:ok, password} <-
-             validate_param_present(request_body["password"], "password is required"),
-           {:ok, user} <- User.create_user(name, password) do
+      with {:ok, name} <- validate_param_present(params["name"], "name is required"),
+           {:ok, password} <- validate_param_present(params["password"], "password is required"),
+           {:ok, _} <- validate_user_not_exists() do
+        user = User.create_user(name, password)
         BaseResponse.generate(201, "success", %{
-          id: user.id,
           name: user.name,
-          inserted_at: user.inserted_at
+          signature: user.signature,
+          avatar: user.avatar,
+          background: user.background
         })
       else
         {:error, message} when is_binary(message) ->
           BaseResponse.generate(400, message, nil)
-
-        {:error, changeset} ->
-          BaseResponse.generate(422, "validation error", changeset_errors(changeset))
       end
 
     conn
@@ -104,6 +109,14 @@ defmodule RainerBlogBackendWeb.UserController do
     do: {:error, error_message}
 
   defp validate_param_present(value, _error_message), do: {:ok, value}
+
+  defp validate_user_not_exists do
+    if User.user_exists?() do
+      {:error, "User already exists"}
+    else
+      {:ok, nil}
+    end
+  end
 
   defp validate_update_params(params) do
     allowed_fields = ["name", "signature", "avatar", "background"]
