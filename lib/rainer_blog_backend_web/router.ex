@@ -9,7 +9,6 @@ defmodule RainerBlogBackendWeb.Router do
     pipe_through :api
 
     get "/check", UserController, :check_user
-    post "/", UserController, :create
     get "/", UserController, :show
     put "/", UserController, :update
   end
