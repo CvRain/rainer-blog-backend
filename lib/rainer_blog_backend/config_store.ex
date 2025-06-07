@@ -13,10 +13,14 @@ defmodule RainerBlogBackend.ConfigStore do
     File.mkdir_p!(Path.dirname(@db_path))
 
     # 启动 CubDB
-    {:ok, db} = CubDB.start_link(data_dir: @db_path, auto_compact: true)
-
-    Logger.info("ConfigStore started with database at #{@db_path}")
-    {:ok, %{db: db}}
+    case CubDB.start_link(data_dir: @db_path, auto_compact: true) do
+      {:ok, db} ->
+        Logger.info("ConfigStore started with database at #{@db_path}")
+        {:ok, %{db: db}}
+      {:error, reason} ->
+        Logger.error("Failed to start ConfigStore: #{inspect(reason)}")
+        {:stop, reason}
+    end
   end
 
   # 客户端 API
@@ -36,17 +40,23 @@ defmodule RainerBlogBackend.ConfigStore do
   # 服务器回调
 
   def handle_call({:get, key}, _from, %{db: db} = state) do
-    value = CubDB.get(db, key)
-    {:reply, value, state}
+    case CubDB.get(db, key) do
+      nil -> {:reply, {:error, :not_found}, state}
+      value -> {:reply, {:ok, value}, state}
+    end
   end
 
   def handle_call({:put, key, value}, _from, %{db: db} = state) do
-    :ok = CubDB.put(db, key, value)
-    {:reply, :ok, state}
+    case CubDB.put(db, key, value) do
+      :ok -> {:reply, {:ok, value}, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
   end
 
   def handle_call({:delete, key}, _from, %{db: db} = state) do
-    :ok = CubDB.delete(db, key)
-    {:reply, :ok, state}
+    case CubDB.delete(db, key) do
+      :ok -> {:reply, :ok, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
   end
 end
