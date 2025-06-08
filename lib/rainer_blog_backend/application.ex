@@ -10,15 +10,11 @@ defmodule RainerBlogBackend.Application do
     children = [
       RainerBlogBackendWeb.Telemetry,
       RainerBlogBackend.Repo,
-      {DNSCluster, query: Application.get_env(:rainer_blog_backend, :dns_cluster_query) || :ignore},
+      {DNSCluster,
+       query: Application.get_env(:rainer_blog_backend, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: RainerBlogBackend.PubSub},
-      # Start the Finch HTTP client for sending emails
       {Finch, name: RainerBlogBackend.Finch},
-      # Start ConfigStore for user configurations
-      RainerBlogBackend.ConfigStore,
-      # Start a worker by calling: RainerBlogBackend.Worker.start_link(arg)
-      # {RainerBlogBackend.Worker, arg},
-      # Start to serve requests, typically the last entry
+      RainerBlogBackend.UserConfig,
       RainerBlogBackendWeb.Endpoint
     ]
 

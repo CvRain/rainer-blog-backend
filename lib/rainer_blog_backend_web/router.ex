@@ -8,6 +8,8 @@ defmodule RainerBlogBackendWeb.Router do
   scope "/api/user", RainerBlogBackendWeb do
     pipe_through :api
 
+    get "/", UserController, :show
+    patch "/", UserController, :update
   end
 
   scope "/api/article", RainerBlogBackendWeb do
@@ -25,10 +27,6 @@ defmodule RainerBlogBackendWeb.Router do
   scope "/api/theme", RainerBlogBackendWeb do
     pipe_through :api
 
-    get "/", ThemeController, :index
-    get "/:id", ThemeController, :show
-    post "/", ThemeController, :create
-    delete "/:id", ThemeController, :delete
   end
 
   scope "/api", RainerBlogBackendWeb do
