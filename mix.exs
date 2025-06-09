@@ -46,7 +46,8 @@ defmodule RainerBlogBackend.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:argon2_elixir, "~> 4.0"},
-      {:cubdb, "~> 2.0"}
+      {:cubdb, "~> 2.0"},
+      {:joken, "~> 2.5"}
     ]
   end
 
