@@ -29,6 +29,11 @@ defmodule RainerBlogBackendWeb.Router do
   scope "/api/theme", RainerBlogBackendWeb do
     pipe_through :api
 
+    post "/create", ThemeController, :create
+    get "/all", ThemeController, :all_themes
+    get "/activite", ThemeController, :activite_themes
+    get "/one", ThemeController, :one_theme
+    delete "/remove", ThemeController, :remove
   end
 
   scope "/api", RainerBlogBackendWeb do
