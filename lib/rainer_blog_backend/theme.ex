@@ -58,4 +58,12 @@ defmodule RainerBlogBackend.Theme do
   def get_all() do
     Repo.all(RainerBlogBackend.Theme)
   end
+
+  @doc """
+    获得存在的Theme的个数
+  """
+  @spec get_count() :: integer()
+  def get_count() do
+    Repo.aggregate(RainerBlogBackend.Theme, :count, :id)
+  end
 end

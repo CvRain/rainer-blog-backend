@@ -51,6 +51,10 @@ defmodule RainerBlogBackendWeb.ThemeController do
     end
   end
 
+  def count(conn, _params) do
+    count = Theme.count()
+    json(conn, BaseResponse.generate(200, "200OK", count))
+  end
 
   defp validate_theme_config(params) do
     required_fields = ["id"]
