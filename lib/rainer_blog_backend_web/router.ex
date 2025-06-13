@@ -5,6 +5,10 @@ defmodule RainerBlogBackendWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :auth do
+    plug RainerBlogBackendWeb.AuthPlug
+  end
+
   scope "/api/user", RainerBlogBackendWeb do
     pipe_through :api
 
@@ -27,13 +31,21 @@ defmodule RainerBlogBackendWeb.Router do
   end
 
   scope "/api/theme", RainerBlogBackendWeb do
-    pipe_through :api
+    pipe_through [:api, :auth]
 
-    post "/create", ThemeController, :create
+    post "/one", ThemeController, :create
+    put "/:id", ThemeController, :update
+    delete "/:id", ThemeController, :delete
+  end
+
+  scope "/api/theme", RainerBlogBackendWeb do
+    pipe_through [:api]
+
+    get "/", ThemeController, :index
     get "/all", ThemeController, :all_themes
     get "/activite", ThemeController, :activite_themes
     get "/one", ThemeController, :one_theme
-    delete "/remove", ThemeController, :remove
+    get "/count", ThemeController, :count
   end
 
   scope "/api", RainerBlogBackendWeb do

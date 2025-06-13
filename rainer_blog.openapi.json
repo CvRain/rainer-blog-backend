@@ -187,13 +187,24 @@
         "security": []
       }
     },
-    "/theme/create": {
+    "/theme/one": {
       "post": {
         "summary": "create_theme",
         "deprecated": false,
         "description": "",
         "tags": [],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "",
+            "required": true,
+            "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2VtYWlsIjoiemhhbmdzYW5AZXhhbXBsZS5jb20iLCJ1c2VyX25hbWUiOiJjdnJhaW4ifQ.e_bg_f0Z4JRcJm-ohZvwBaHU1ilDq3kRuLTA4eNboEM",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {

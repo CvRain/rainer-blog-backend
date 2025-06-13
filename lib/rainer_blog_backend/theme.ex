@@ -60,10 +60,18 @@ defmodule RainerBlogBackend.Theme do
   end
 
   @doc """
-    获得存在的Theme的个数
+  更新一个Theme
   """
-  @spec get_count() :: integer()
-  def get_count() do
+  @spec update(Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  def update(theme) do
+    Repo.update(theme)
+  end
+
+  @doc """
+  获得所有的Theme数量
+  """
+  @spec count() :: integer()
+  def count() do
     Repo.aggregate(RainerBlogBackend.Theme, :count, :id)
   end
 end

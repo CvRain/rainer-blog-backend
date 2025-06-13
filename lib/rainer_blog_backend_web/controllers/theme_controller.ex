@@ -56,6 +56,24 @@ defmodule RainerBlogBackendWeb.ThemeController do
     json(conn, BaseResponse.generate(200, "200OK", count))
   end
 
+
+  def update(conn, _params) do
+    request_body = conn.body_params
+    case validate_theme_config(request_body) do
+      {:ok, config} ->
+        case Theme.update(config) do
+          {:ok, _} ->
+            json(conn, BaseResponse.generate(200, "200OK", nil))
+
+          {:error, _} ->
+            json(conn, BaseResponse.generate(500, "500Internal Server Error", nil))
+        end
+
+      {:error, err} ->
+        json(conn, BaseResponse.generate(400, "400BadRequest", err))
+    end
+  end
+
   defp validate_theme_config(params) do
     required_fields = ["id"]
     optional_fields = ["name", "description", "order", "is_active"]

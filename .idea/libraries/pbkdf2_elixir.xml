@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="pbkdf2_elixir" type="mix">
+    <CLASSES />
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/deps/pbkdf2_elixir/lib" />
+      <root url="file://$PROJECT_DIR$/deps/pbkdf2_elixir/lib" />
+    </SOURCES>
+  </library>
+</component>

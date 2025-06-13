@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="cubdb" type="mix">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/cubdb/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/cubdb/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/cubdb/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/cubdb/ebin" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/deps/cubdb/lib" />
+      <root url="file://$PROJECT_DIR$/deps/cubdb/lib" />
+    </SOURCES>
+  </library>
+</component>
