@@ -23,7 +23,20 @@ defmodule RainerBlogBackendWeb.Router do
   end
 
   scope "/api/chapter", RainerBlogBackendWeb do
+    pipe_through [:api, :auth]
+
+    post "/", ChapterController, :create
+    put "/:id", ChapterController, :update
+    delete "/:id", ChapterController, :delete
+  end
+
+  scope "/api/chapter", RainerBlogBackendWeb do
     pipe_through :api
+
+    get "/", ChapterController, :index
+    get "/active", ChapterController, :active
+    get "/theme/:theme_id", ChapterController, :by_theme
+    get "/theme/:theme_id/active", ChapterController, :active_by_theme
   end
 
   scope "/api/collection", RainerBlogBackendWeb do
@@ -46,12 +59,6 @@ defmodule RainerBlogBackendWeb.Router do
     get "/activite", ThemeController, :activite_themes
     get "/one", ThemeController, :one_theme
     get "/count", ThemeController, :count
-  end
-
-  scope "/api", RainerBlogBackendWeb do
-    pipe_through :api
-
-    get "/", PageController, :index
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
