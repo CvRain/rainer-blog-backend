@@ -7,7 +7,7 @@ defmodule RainerBlogBackendWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_rainer_blog_backend_key",
-    signing_salt: "dAIfuSZh",
+    signing_salt: "1145141919810",
     same_site: "Lax"
   ]
 
@@ -47,5 +47,6 @@ defmodule RainerBlogBackendWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  plug CORSPlug
   plug RainerBlogBackendWeb.Router
 end

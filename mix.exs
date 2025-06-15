@@ -5,7 +5,7 @@ defmodule RainerBlogBackend.MixProject do
     [
       app: :rainer_blog_backend,
       version: "0.1.0",
-      elixir: "~> 1.14",
+      elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -47,7 +47,8 @@ defmodule RainerBlogBackend.MixProject do
       {:bandit, "~> 1.5"},
       {:argon2_elixir, "~> 4.0"},
       {:cubdb, "~> 2.0"},
-      {:joken, "~> 2.5"}
+      {:joken, "~> 2.5"},
+      {:cors_plug, "~> 3.0"}
     ]
   end
 
@@ -59,10 +60,13 @@ defmodule RainerBlogBackend.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup"],
+      setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
+      "assets.build": ["tailwind default", "esbuild default"],
+      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
   end
 end

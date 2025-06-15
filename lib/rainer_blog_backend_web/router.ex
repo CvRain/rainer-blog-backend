@@ -13,9 +13,14 @@ defmodule RainerBlogBackendWeb.Router do
     pipe_through :api
 
     get "/", UserController, :show
-    put "/", UserController, :update
     post "/login", UserController, :login
     get "/verify", UserController, :verify_token
+  end
+
+  scope "/api/user", RainerBlogBackendWeb do
+    pipe_through [:api, :auth]
+
+    patch "/", UserController, :update
   end
 
   scope "/api/article", RainerBlogBackendWeb do
