@@ -2,6 +2,7 @@ defmodule RainerBlogBackend.Theme do
   use Ecto.Schema
   import Ecto.Changeset
   alias RainerBlogBackend.Repo
+  alias RainerBlogBackend.Chapter
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -21,17 +22,37 @@ defmodule RainerBlogBackend.Theme do
     theme
     |> cast(attrs, [:name, :description, :order, :is_active])
     |> validate_required([:name])
+    |> validate_format(:name, ~r/^[a-zA-Z0-9_-]+$/, message: "主题名称只能包含字母、数字、下划线和减号")
     |> unique_constraint(:name)
   end
 
   @doc """
   创建一个新的Theme, 并且返回新的Theme结构
+  同时会创建一个默认(.default)的chapter
   """
   @spec create(String.t(), String.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   def create(name, description) do
-    %RainerBlogBackend.Theme{}
-    |> RainerBlogBackend.Theme.changeset(%{name: name, description: description})
-    |> Repo.insert()
+    Repo.transaction(fn ->
+      case %RainerBlogBackend.Theme{}
+           |> RainerBlogBackend.Theme.changeset(%{name: name, description: description})
+           |> Repo.insert() do
+        {:ok, theme} ->
+          # 创建默认chapter
+          case Chapter.create(%{
+                 name: ".default",
+                 description: "默认章节",
+                 order: 0,
+                 is_active: true,
+                 theme_id: theme.id
+               }) do
+            {:ok, _chapter} -> theme
+            {:error, _} -> Repo.rollback("Failed to create default chapter")
+          end
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
   end
 
   @doc """

@@ -9,6 +9,12 @@ defmodule RainerBlogBackendWeb.Router do
     plug RainerBlogBackendWeb.AuthPlug
   end
 
+  scope "/", RainerBlogBackendWeb do
+    pipe_through :api
+
+    get "/", OtherPageController, :main
+  end
+
   scope "/api/user", RainerBlogBackendWeb do
     pipe_through :api
 
