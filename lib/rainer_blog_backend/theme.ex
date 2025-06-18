@@ -1,6 +1,7 @@
 defmodule RainerBlogBackend.Theme do
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
   alias RainerBlogBackend.Repo
   alias RainerBlogBackend.Chapter
 
@@ -94,5 +95,18 @@ defmodule RainerBlogBackend.Theme do
   @spec count() :: integer()
   def count() do
     Repo.aggregate(RainerBlogBackend.Theme, :count, :id)
+  end
+
+  @doc """
+  获得本周创建的Theme数量
+  """
+  @spec count_this_week() :: integer()
+  def count_this_week() do
+    now = DateTime.utc_now()
+    start_of_week = DateTime.add(now, -DateTime.to_unix(now) |> rem(7 * 24 * 60 * 60), :second)
+
+    __MODULE__
+    |> where([t], t.inserted_at >= ^start_of_week)
+    |> Repo.aggregate(:count, :id)
   end
 end

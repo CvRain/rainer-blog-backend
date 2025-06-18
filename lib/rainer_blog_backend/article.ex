@@ -1,7 +1,10 @@
 defmodule RainerBlogBackend.Article do
   use Ecto.Schema
-  import Ecto.Changeset
 
+  import Ecto.Changeset
+  import Ecto.Query
+
+  alias RainerBlogBackend.Repo
   @doc """
     博客文章的结构
     - title: 文章标题
@@ -30,4 +33,25 @@ defmodule RainerBlogBackend.Article do
     |> cast(attrs, [:title, :content, :aws_key, :order, :is_active])
     |> validate_required([:title, :content, :aws_key, :order, :is_active])
   end
+
+  @doc """
+    获取存在的article个数
+  """
+  @spec count() :: integer()
+  def count() do
+    Repo.aggregate(RainerBlogBackend.Article, :count, :id)
+  end
+
+  @doc """
+    获取本周创建的article个数
+  """
+  @spec count_this_week() :: integer()
+  def count_this_week() do
+    now = DateTime.utc_now()
+    start_of_week = DateTime.add(now, -DateTime.to_unix(now) |> rem(7 * 24 * 60 * 60), :second)
+
+    __MODULE__
+    |> where([a], a.inserted_at >= ^start_of_week)
+    |> Repo.aggregate(:count, :id)
+ end
 end

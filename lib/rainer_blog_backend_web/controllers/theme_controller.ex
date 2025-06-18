@@ -53,9 +53,19 @@ defmodule RainerBlogBackendWeb.ThemeController do
 
   def count(conn, _params) do
     count = Theme.count()
-    json(conn, BaseResponse.generate(200, "200OK", count))
+    response = %{
+      count: count
+    }
+    json(conn, BaseResponse.generate(200, "200OK", response))
   end
 
+  def count_this_week(conn, _params) do
+    count = Theme.count_this_week()
+    response = %{
+      count: count
+    }
+    json(conn, BaseResponse.generate(200, "200OK", response))
+  end
 
   def update(conn, _params) do
     request_body = conn.body_params

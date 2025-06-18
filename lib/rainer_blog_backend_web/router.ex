@@ -70,6 +70,7 @@ defmodule RainerBlogBackendWeb.Router do
     get "/activite", ThemeController, :activite_themes
     get "/one", ThemeController, :one_theme
     get "/count", ThemeController, :count
+    get "/count/this_week", ThemeController, :count_this_week
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
