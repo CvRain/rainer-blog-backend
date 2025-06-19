@@ -31,6 +31,9 @@ defmodule RainerBlogBackendWeb.Router do
 
   scope "/api/article", RainerBlogBackendWeb do
     pipe_through :api
+
+    get "/count", ArticleController, :count
+    get "/count/this_week", ArticleController, :count_this_week
   end
 
   scope "/api/chapter", RainerBlogBackendWeb do
@@ -52,6 +55,28 @@ defmodule RainerBlogBackendWeb.Router do
 
   scope "/api/collection", RainerBlogBackendWeb do
     pipe_through :api
+
+    get "/count", CollectionController, :count
+    get "/count/this_week", CollectionController, :count_this_week
+  end
+
+  # todo
+  scope "/api/collection", RainerBlogBackendWeb do
+    pipe_through [:api, :auth]
+
+    post "/one", CollectionController, :create
+    put "/:id", CollectionController, :update
+    delete "/:id", CollectionController, :delete
+  end
+
+
+  scope "/api/resource", RainerBlogBackendWeb do
+    pipe_through [:api]
+  end
+
+  scope "/api/resource", RainerBlogBackendWeb do
+    pipe_through [:api, :auth]
+
   end
 
   scope "/api/theme", RainerBlogBackendWeb do
