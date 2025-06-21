@@ -112,8 +112,4 @@ defmodule RainerBlogBackend.Chapter do
     |> changeset(attrs)
     |> Repo.update()
   end
-
-  def new do
-    %__MODULE__{}
-  end
 end

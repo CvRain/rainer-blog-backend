@@ -3,8 +3,6 @@ defmodule RainerBlogBackend.Collection do
   import Ecto.Changeset
   import Ecto.Query
 
-  alias RainerBlogBackend.Repo
-
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "collections" do
@@ -34,8 +32,8 @@ defmodule RainerBlogBackend.Collection do
   @doc """
     获取本周创建的collection个数
   """
-  @spec count_this_week() :: integer()
-  def count_this_week() do
+  @spec count_append_weekly() :: integer()
+  def count_append_weekly() do
     now = DateTime.utc_now()
     start_of_week = DateTime.add(now, -DateTime.to_unix(now) |> rem(7 * 24 * 60 * 60), :second)
 

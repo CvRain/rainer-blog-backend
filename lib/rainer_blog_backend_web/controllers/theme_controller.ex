@@ -60,7 +60,7 @@ defmodule RainerBlogBackendWeb.ThemeController do
   end
 
   def count_this_week(conn, _params) do
-    count = Theme.count_this_week()
+    count = Theme.count_append_weekly()
     response = %{
       count: count
     }

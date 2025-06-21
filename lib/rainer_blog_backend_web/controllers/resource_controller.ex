@@ -4,7 +4,7 @@ defmodule RainerBlogBackendWeb.ResourceController do
   def index(conn, _params) do
     data = %{
       count: RainerBlogBackend.Resource.count(),
-      count_this_week: RainerBlogBackend.Resource.count_this_week()
+      count_this_week: RainerBlogBackend.Resource.count_append_weekly()
     }
     json(conn, RainerBlogBackendWeb.Types.BaseResponse.generate(200, "200Ok", data))
   end
@@ -19,7 +19,7 @@ defmodule RainerBlogBackendWeb.ResourceController do
 
   def count_this_week(conn, _params) do
     data = %{
-      count_this_week: RainerBlogBackend.Resource.count_this_week()
+      count_this_week: RainerBlogBackend.Resource.count_append_weekly()
     }
     json(conn, RainerBlogBackendWeb.Types.BaseResponse.generate(200, "200Ok", data))
   end

@@ -15,6 +15,12 @@ defmodule RainerBlogBackendWeb.Router do
     get "/", OtherPageController, :main
   end
 
+  scope "/api", RainerBlogBackendWeb do
+    pipe_through :api
+
+    get "/total/overview", OtherPageController, :storage_overview
+  end
+
   scope "/api/user", RainerBlogBackendWeb do
     pipe_through :api
 
@@ -33,7 +39,7 @@ defmodule RainerBlogBackendWeb.Router do
     pipe_through :api
 
     get "/count", ArticleController, :count
-    get "/count/this_week", ArticleController, :count_this_week
+    get "/count/this_week", ArticleController, :count_append_weekly
   end
 
   scope "/api/chapter", RainerBlogBackendWeb do
@@ -57,7 +63,7 @@ defmodule RainerBlogBackendWeb.Router do
     pipe_through :api
 
     get "/count", CollectionController, :count
-    get "/count/this_week", CollectionController, :count_this_week
+    get "/count/this_week", CollectionController, :count_append_weekly
   end
 
   # todo
@@ -72,6 +78,9 @@ defmodule RainerBlogBackendWeb.Router do
 
   scope "/api/resource", RainerBlogBackendWeb do
     pipe_through [:api]
+
+    get "/count", ResourceController, :count
+    get "/count/this_week", ResourceController, :count_append_weekly
   end
 
   scope "/api/resource", RainerBlogBackendWeb do
@@ -95,7 +104,7 @@ defmodule RainerBlogBackendWeb.Router do
     get "/activite", ThemeController, :activite_themes
     get "/one", ThemeController, :one_theme
     get "/count", ThemeController, :count
-    get "/count/this_week", ThemeController, :count_this_week
+    get "/count/this_week", ThemeController, :count_append_weekly
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
