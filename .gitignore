@@ -27,3 +27,4 @@ rainer_blog_backend-*.tar
 
 .idea
 .vscode
+priv/cubdb/*

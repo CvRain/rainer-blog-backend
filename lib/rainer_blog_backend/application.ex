@@ -5,8 +5,13 @@ defmodule RainerBlogBackend.Application do
 
   use Application
 
+  alias RainerBlogBackend.AwsService
+
   @impl true
   def start(_type, _args) do
+    # Initialize AWS configuration
+    AwsService.init_config()
+
     children = [
       RainerBlogBackendWeb.Telemetry,
       RainerBlogBackend.Repo,

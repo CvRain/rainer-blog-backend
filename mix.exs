@@ -48,7 +48,10 @@ defmodule RainerBlogBackend.MixProject do
       {:argon2_elixir, "~> 4.0"},
       {:cubdb, "~> 2.0"},
       {:joken, "~> 2.5"},
-      {:cors_plug, "~> 3.0"}
+      {:cors_plug, "~> 3.0"},
+      {:ex_aws, "~> 2.5"},
+      {:ex_aws_s3, "~> 2.4"},
+      {:hackney, "~> 1.20"}
     ]
   end
 
