@@ -15,17 +15,13 @@ defmodule RainerBlogBackend.AwsService do
            region: region
          } <- UserConfig.get_aws_config() do
       if access_key_id != "" and secret_access_key != "" and region != "" do
-        new_config = [
-          access_key_id: access_key_id,
-          secret_access_key: secret_access_key,
-          region: region
-        ]
+        Application.put_env(:ex_aws, :access_key_id, access_key_id)
+        Application.put_env(:ex_aws, :secret_access_key, secret_access_key)
+        Application.put_env(:ex_aws, :region, region)
 
-        # Merges the new config into the global ExAws configuration
-        :ok = ExAws.Config.put(:default, new_config)
         Logger.info("AWS configuration loaded successfully.")
       else
-        Logger.warn("AWS configuration is missing from UserConfig. S3 operations will fail.")
+        Logger.warning("AWS configuration is missing from UserConfig. S3 operations will fail.")
       end
     else
       _ -> Logger.error("Failed to get AWS configuration from UserConfig.")
@@ -48,7 +44,7 @@ defmodule RainerBlogBackend.AwsService do
       Logger.info("Uploading #{file_path} to S3 bucket '#{bucket}' at #{s3_path}...")
       # ExAws.S3.put_object(bucket, s3_path, File.stream!(file_path))
       # |> ExAws.request()
-      Logger.warn("S3 upload functionality is not yet fully implemented.")
+      Logger.warning("S3 upload functionality is not yet fully implemented.")
       {:ok, "Upload not implemented"}
     end
   end

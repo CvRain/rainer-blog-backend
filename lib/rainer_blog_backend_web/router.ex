@@ -93,7 +93,7 @@ defmodule RainerBlogBackendWeb.Router do
 
     post "/one", ThemeController, :create
     put "/:id", ThemeController, :update
-    delete "/:id", ThemeController, :delete
+    delete "/:id", ThemeController, :remove
   end
 
   scope "/api/theme", RainerBlogBackendWeb do
@@ -101,10 +101,12 @@ defmodule RainerBlogBackendWeb.Router do
 
     get "/", ThemeController, :index
     get "/all", ThemeController, :all_themes
+    get "/all/with_stats", ThemeController, :all_themes_with_stats
     get "/activite", ThemeController, :activite_themes
     get "/one", ThemeController, :one_theme
     get "/count", ThemeController, :count
     get "/count/this_week", ThemeController, :count_append_weekly
+
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

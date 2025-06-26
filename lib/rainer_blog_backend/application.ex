@@ -9,9 +9,6 @@ defmodule RainerBlogBackend.Application do
 
   @impl true
   def start(_type, _args) do
-    # Initialize AWS configuration
-    AwsService.init_config()
-
     children = [
       RainerBlogBackendWeb.Telemetry,
       RainerBlogBackend.Repo,
@@ -20,6 +17,8 @@ defmodule RainerBlogBackend.Application do
       {Phoenix.PubSub, name: RainerBlogBackend.PubSub},
       {Finch, name: RainerBlogBackend.Finch},
       RainerBlogBackend.UserConfig,
+      # Start a task to initialize AWS config after UserConfig has started.
+      {Task, fn -> AwsService.init_config() end},
       RainerBlogBackendWeb.Endpoint
     ]
 

@@ -7,7 +7,8 @@ defmodule RainerBlogBackend.Theme do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  @derive {Jason.Encoder, only: [:id, :name, :description, :order, :is_active, :inserted_at, :updated_at]}
+  @derive {Jason.Encoder,
+           only: [:id, :name, :description, :order, :is_active, :inserted_at, :updated_at]}
   schema "themes" do
     field :name, :string
     field :description, :string
@@ -23,7 +24,7 @@ defmodule RainerBlogBackend.Theme do
     theme
     |> cast(attrs, [:name, :description, :order, :is_active])
     |> validate_required([:name])
-    |> validate_format(:name, ~r/^[a-zA-Z0-9_-]+$/, message: "主题名称只能包含字母、数字、下划线和减号")
+    |> validate_format(:name, ~r/^[\p{Han}a-zA-Z0-9_]+$/u, message: "主题名称只能包含中文、字母、数字和下划线")
     |> unique_constraint(:name)
   end
 
@@ -108,5 +109,34 @@ defmodule RainerBlogBackend.Theme do
     __MODULE__
     |> where([t], t.inserted_at >= ^start_of_week)
     |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  获取所有主题及其下章节数和文章数统计
+  """
+  def get_all_with_stats() do
+    themes = Repo.all(__MODULE__)
+
+    Enum.map(themes, fn theme ->
+      chapter_count =
+        RainerBlogBackend.Chapter
+        |> where([c], c.theme_id == ^theme.id)
+        |> Repo.aggregate(:count, :id)
+
+      article_count =
+        from(a in RainerBlogBackend.Article,
+          join: c in RainerBlogBackend.Chapter,
+          on: a.chapter_id == c.id,
+          where: c.theme_id == ^theme.id,
+          select: count(a.id)
+        )
+        |> Repo.one()
+
+      theme_map = Map.from_struct(theme) |> Map.drop([:__meta__, :__struct__])
+
+      theme_map
+      |> Map.put(:chapter_count, chapter_count)
+      |> Map.put(:article_count, article_count)
+    end)
   end
 end

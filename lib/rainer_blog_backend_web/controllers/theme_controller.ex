@@ -10,14 +10,25 @@ defmodule RainerBlogBackendWeb.ThemeController do
     theme_name = request_body["name"]
     theme_description = request_body["description"]
 
-    with true <- Map.has_key?(request_body, "name"),
-         true <- Map.has_key?(request_body, "description") do
-      case Theme.create(theme_name, theme_description) do
-        {:ok, theme} -> json(conn, BaseResponse.generate(201, "201Created", theme))
-        {:error, err} -> json(conn, BaseResponse.generate(400, "400BadRequest", err))
-      end
-    else
-      _ -> json(conn, BaseResponse.generate(400, "400BadRequest", "参数错误"))
+    cond do
+      is_nil(theme_name) or theme_name == "" ->
+        json(conn, BaseResponse.generate(400, "400BadRequest", "缺少主题名称"))
+      is_nil(theme_description) or theme_description == "" ->
+        json(conn, BaseResponse.generate(400, "400BadRequest", "缺少主题描述"))
+      true ->
+        case Theme.create(theme_name, theme_description) do
+          {:ok, theme} ->
+            json(conn, BaseResponse.generate(201, "201Created", theme))
+          {:error, %Ecto.Changeset{} = changeset} ->
+            errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+              Enum.reduce(opts, msg, fn {key, value}, acc ->
+                String.replace(acc, "%{#{key}}", to_string(value))
+              end)
+            end)
+            json(conn, BaseResponse.generate(400, "400BadRequest", errors))
+          {:error, err} ->
+            json(conn, BaseResponse.generate(400, "400BadRequest", err))
+        end
     end
   end
 
@@ -101,5 +112,10 @@ defmodule RainerBlogBackendWeb.ThemeController do
     else
       {:error, "缺少必填字段: #{Enum.join(missing_fields, ", ")}"}
     end
+  end
+
+  def all_themes_with_stats(conn, _params) do
+    themes = Theme.get_all_with_stats()
+    json(conn, BaseResponse.generate(200, "200OK", themes))
   end
 end
