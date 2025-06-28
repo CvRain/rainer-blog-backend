@@ -92,7 +92,7 @@ defmodule RainerBlogBackendWeb.Router do
     pipe_through [:api, :auth]
 
     post "/one", ThemeController, :create
-    put "/:id", ThemeController, :update
+    patch "/one", ThemeController, :update
     delete "/:id", ThemeController, :remove
   end
 
@@ -103,7 +103,7 @@ defmodule RainerBlogBackendWeb.Router do
     get "/all", ThemeController, :all_themes
     get "/all/with_stats", ThemeController, :all_themes_with_stats
     get "/activite", ThemeController, :activite_themes
-    get "/one", ThemeController, :one_theme
+    get "/one/:id", ThemeController, :one_theme
     get "/count", ThemeController, :count
     get "/count/this_week", ThemeController, :count_append_weekly
 

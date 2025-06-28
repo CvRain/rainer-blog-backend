@@ -83,11 +83,19 @@ defmodule RainerBlogBackendWeb.ThemeController do
     case validate_theme_config(request_body) do
       {:ok, config} ->
         case Theme.update(config) do
-          {:ok, _} ->
-            json(conn, BaseResponse.generate(200, "200OK", nil))
-
+          {:ok, theme} ->
+            json(conn, BaseResponse.generate(200, "200OK", theme))
+          {:error, %Ecto.Changeset{} = changeset} ->
+            errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+              Enum.reduce(opts, msg, fn {key, value}, acc ->
+                String.replace(acc, "%{#{key}}", to_string(value))
+              end)
+            end)
+            json(conn, BaseResponse.generate(400, "400BadRequest", errors))
+          {:error, err} when is_binary(err) ->
+            json(conn, BaseResponse.generate(400, "400BadRequest", err))
           {:error, _} ->
-            json(conn, BaseResponse.generate(500, "500Internal Server Error", nil))
+            json(conn, BaseResponse.generate(500, "500Internal Server Error", "更新失败"))
         end
 
       {:error, err} ->
@@ -102,17 +110,39 @@ defmodule RainerBlogBackendWeb.ThemeController do
     missing_fields = Enum.filter(required_fields, &(is_nil(params[&1]) or params[&1] == ""))
 
     if Enum.empty?(missing_fields) do
-      # 构建配置映射
-      config =
-        Map.new(required_fields ++ optional_fields, fn field ->
-          {String.to_atom(field), params[field] || ""}
-        end)
+      # 构建配置映射，正确处理数据类型
+      config = %{
+        id: params["id"],
+        name: params["name"],
+        description: params["description"] || "",
+        order: parse_integer(params["order"], 0),
+        is_active: parse_boolean(params["is_active"], false)
+      }
 
       {:ok, config}
     else
       {:error, "缺少必填字段: #{Enum.join(missing_fields, ", ")}"}
     end
   end
+
+  defp parse_integer(value, default) when is_integer(value), do: value
+  defp parse_integer(value, default) when is_binary(value) do
+    case Integer.parse(value) do
+      {int, _} -> int
+      :error -> default
+    end
+  end
+  defp parse_integer(_, default), do: default
+
+  defp parse_boolean(value, default) when is_boolean(value), do: value
+  defp parse_boolean(value, default) when is_binary(value) do
+    case String.downcase(value) do
+      "true" -> true
+      "false" -> false
+      _ -> default
+    end
+  end
+  defp parse_boolean(_, default), do: default
 
   def all_themes_with_stats(conn, _params) do
     themes = Theme.get_all_with_stats()

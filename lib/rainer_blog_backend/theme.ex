@@ -85,9 +85,16 @@ defmodule RainerBlogBackend.Theme do
   @doc """
   更新一个Theme
   """
-  @spec update(Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
-  def update(theme) do
-    Repo.update(theme)
+  @spec update(map()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  def update(attrs) do
+    case get_one(attrs.id) do
+      nil ->
+        {:error, "主题不存在"}
+      theme ->
+        theme
+        |> changeset(attrs)
+        |> Repo.update()
+    end
   end
 
   @doc """
