@@ -41,4 +41,32 @@ defmodule RainerBlogBackend.Collection do
     |> where([c], c.inserted_at >= ^start_of_week)
     |> RainerBlogBackend.Repo.aggregate(:count, :id)
   end
+
+  @doc """
+    创建collection
+  """
+  @spec create(String.t(), String.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  def create(name, description) do
+    %RainerBlogBackend.Collection{
+      name: name,
+      description: description,
+      order: 0,
+      is_active: true
+    }
+    |> RainerBlogBackend.Repo.insert()
+  end
+
+  @doc """
+    删除collection
+  """
+  def remove(id) do
+    RainerBlogBackend.Repo.delete(id)
+  end
+
+  @doc """
+    更新collection
+  """
+  def update(id, name, description) do
+    RainerBlogBackend.Repo.update(id, name: name, description: description)
+  end
 end

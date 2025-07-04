@@ -109,6 +109,13 @@ defmodule RainerBlogBackendWeb.Router do
 
   end
 
+  scope "/api/s3", RainerBlogBackendWeb do
+    pipe_through [:api, :auth]
+
+    post "/config", S3Controller, :update_config
+    get "/config", S3Controller, :get_config
+  end
+
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:rainer_blog_backend, :dev_routes) do
     # If you want to use the LiveDashboard in production, you should put
