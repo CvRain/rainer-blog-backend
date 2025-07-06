@@ -102,6 +102,7 @@ defmodule RainerBlogBackendWeb.Router do
     get "/", ThemeController, :index
     get "/all", ThemeController, :all_themes
     get "/all/with_stats", ThemeController, :all_themes_with_stats
+    get "/all/with_details", ThemeController, :all_themes_with_details
     get "/activite", ThemeController, :activite_themes
     get "/one/:id", ThemeController, :one_theme
     get "/count", ThemeController, :count

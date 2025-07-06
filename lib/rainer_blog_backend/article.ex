@@ -16,6 +16,7 @@ defmodule RainerBlogBackend.Article do
   """
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+  @derive {Jason.Encoder, only: [:id, :title, :content, :aws_key, :order, :is_active, :chapter_id, :inserted_at, :updated_at]}
   schema "articles" do
     field :title, :string
     field :content, :string
@@ -30,8 +31,8 @@ defmodule RainerBlogBackend.Article do
   @doc false
   def changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :content, :aws_key, :order, :is_active])
-    |> validate_required([:title, :content, :aws_key, :order, :is_active])
+    |> cast(attrs, [:title, :content, :aws_key, :order, :is_active, :chapter_id])
+    |> validate_required([:title, :content, :aws_key, :order, :is_active, :chapter_id])
   end
 
   @doc """
@@ -53,5 +54,27 @@ defmodule RainerBlogBackend.Article do
     __MODULE__
     |> where([a], a.inserted_at >= ^start_of_week)
     |> Repo.aggregate(:count, :id)
- end
+  end
+
+  @doc """
+    获取指定chapter下的所有文章
+  """
+  @spec get_by_chapter(String.t()) :: [Ecto.Schema.t()]
+  def get_by_chapter(chapter_id) do
+    __MODULE__
+    |> where([a], a.chapter_id == ^chapter_id)
+    |> order_by([a], asc: a.order)
+    |> Repo.all()
+  end
+
+  @doc """
+    获取指定chapter下激活的文章
+  """
+  @spec get_active_by_chapter(String.t()) :: [Ecto.Schema.t()]
+  def get_active_by_chapter(chapter_id) do
+    __MODULE__
+    |> where([a], a.chapter_id == ^chapter_id and a.is_active == true)
+    |> order_by([a], asc: a.order)
+    |> Repo.all()
+  end
 end

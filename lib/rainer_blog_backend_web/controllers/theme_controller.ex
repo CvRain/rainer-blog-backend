@@ -148,4 +148,9 @@ defmodule RainerBlogBackendWeb.ThemeController do
     themes = Theme.get_all_with_stats()
     json(conn, BaseResponse.generate(200, "200OK", themes))
   end
+
+  def all_themes_with_details(conn, _params) do
+    themes = Theme.get_all_with_details()
+    json(conn, BaseResponse.generate(200, "200OK", themes))
+  end
 end

@@ -4,6 +4,7 @@ defmodule RainerBlogBackend.Theme do
   import Ecto.Query
   alias RainerBlogBackend.Repo
   alias RainerBlogBackend.Chapter
+  alias RainerBlogBackend.Article
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -144,6 +145,28 @@ defmodule RainerBlogBackend.Theme do
       theme_map
       |> Map.put(:chapter_count, chapter_count)
       |> Map.put(:article_count, article_count)
+    end)
+  end
+
+  @doc """
+  获取所有主题及其下属的章节和文章详细信息
+  """
+  def get_all_with_details() do
+    themes = Repo.all(__MODULE__)
+
+    Enum.map(themes, fn theme ->
+      # 获取该主题下的所有章节
+      chapters = Chapter.get_by_theme(theme.id, 1, 1000) # 获取所有章节，不分页
+
+      # 为每个章节获取文章
+      chapters_with_articles = Enum.map(chapters, fn chapter ->
+        articles = Article.get_by_chapter(chapter.id)
+        chapter_map = Map.from_struct(chapter) |> Map.drop([:__meta__, :__struct__])
+        Map.put(chapter_map, :articles, articles)
+      end)
+
+      theme_map = Map.from_struct(theme) |> Map.drop([:__meta__, :__struct__])
+      Map.put(theme_map, :chapters, chapters_with_articles)
     end)
   end
 end
