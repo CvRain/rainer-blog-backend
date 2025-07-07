@@ -40,6 +40,10 @@ defmodule RainerBlogBackendWeb.Router do
 
     get "/count", ArticleController, :count
     get "/count/this_week", ArticleController, :count_append_weekly
+    post "/one", ArticleController, :create
+    get "/one/:id", ArticleController, :show
+    delete "/one/:id", ArticleController, :delete
+    patch "/one/:id", ArticleController, :update
   end
 
   scope "/api/chapter", RainerBlogBackendWeb do

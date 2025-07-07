@@ -8,7 +8,7 @@ defmodule RainerBlogBackend.Article do
   @doc """
     博客文章的结构
     - title: 文章标题
-    - content: 文章内容，实际上存放的文章链接
+    - content: 文章梗概，可以不填
     - aws_key: aws格式的对象存储键
     - order: 排序字段
     - is_active: 是否激活，默认不激活
@@ -76,5 +76,15 @@ defmodule RainerBlogBackend.Article do
     |> where([a], a.chapter_id == ^chapter_id and a.is_active == true)
     |> order_by([a], asc: a.order)
     |> Repo.all()
+  end
+
+  @doc """
+  创建一个新的Article
+  """
+  @spec create(map()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  def create(attrs) do
+    %__MODULE__{}
+    |> changeset(attrs)
+    |> Repo.insert()
   end
 end

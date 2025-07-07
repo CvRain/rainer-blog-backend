@@ -19,13 +19,14 @@ defmodule RainerBlogBackendWeb.S3Controller do
 
   def update_config(conn, params) do
     if internal_ip?(conn) do
-      required = ["access_key_id", "secret_access_key", "region", "bucket"]
+      required = ["access_key_id", "secret_access_key", "region", "bucket", "endpoint"]
       if Enum.all?(required, &Map.has_key?(params, &1)) do
         config = %{
           access_key_id: params["access_key_id"],
           secret_access_key: params["secret_access_key"],
           region: params["region"],
-          bucket: params["bucket"]
+          bucket: params["bucket"],
+          endpoint: params["endpoint"]
         }
         :ok = UserConfig.update_aws_config(config)
         json(conn, %{code: 0, msg: "ok", data: config})

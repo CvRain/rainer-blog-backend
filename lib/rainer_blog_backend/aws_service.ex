@@ -7,24 +7,30 @@ defmodule RainerBlogBackend.AwsService do
   This should be called when the application starts.
   """
   def init_config do
-    Logger.info("Initializing AWS configuration...")
+    Logger.info("Initializing AWS/OBS configuration...")
 
     with %{
            access_key_id: access_key_id,
            secret_access_key: secret_access_key,
-           region: region
-         } <- UserConfig.get_aws_config() do
-      if access_key_id != "" and secret_access_key != "" and region != "" do
+           region: region,
+           bucket: bucket,
+           endpoint: endpoint
+         } <- RainerBlogBackend.UserConfig.get_aws_config() do
+      if access_key_id != "" and secret_access_key != "" and region != "" and endpoint != "" do
         Application.put_env(:ex_aws, :access_key_id, access_key_id)
         Application.put_env(:ex_aws, :secret_access_key, secret_access_key)
         Application.put_env(:ex_aws, :region, region)
-
-        Logger.info("AWS configuration loaded successfully.")
+        Application.put_env(:ex_aws, :s3, [
+          scheme: "https://",
+          host: endpoint,
+          region: region
+        ])
+        Logger.info("AWS/OBS configuration loaded successfully.")
       else
-        Logger.warning("AWS configuration is missing from UserConfig. S3 operations will fail.")
+        Logger.warning("AWS/OBS configuration is missing from UserConfig. S3 operations will fail.")
       end
     else
-      _ -> Logger.error("Failed to get AWS configuration from UserConfig.")
+      _ -> Logger.error("Failed to get AWS/OBS configuration from UserConfig.")
     end
   end
 
@@ -46,6 +52,59 @@ defmodule RainerBlogBackend.AwsService do
       # |> ExAws.request()
       Logger.warning("S3 upload functionality is not yet fully implemented.")
       {:ok, "Upload not implemented"}
+    end
+  end
+
+  @doc """
+  直接上传字符串内容到 S3，返回 aws_key
+  - content: 文件内容
+  - s3_path: S3 路径
+  """
+  def upload_content(content, s3_path) do
+    bucket = UserConfig.get_aws_config()[:bucket]
+    if bucket == "" do
+      Logger.error("S3 bucket is not configured.")
+      {:error, :bucket_not_configured}
+    else
+      Logger.info("Uploading content to S3 bucket '#{bucket}' at #{s3_path}...")
+      case ExAws.S3.put_object(bucket, s3_path, content) |> ExAws.request() do
+        {:ok, _resp} -> {:ok, s3_path}
+        {:error, reason} -> {:error, reason}
+      end
+    end
+  end
+
+  @doc """
+  根据aws_key从S3下载内容
+  """
+  def download_content(s3_path) do
+    bucket = UserConfig.get_aws_config()[:bucket]
+    if bucket == "" do
+      Logger.error("S3 bucket is not configured.")
+      {:error, :bucket_not_configured}
+    else
+      Logger.info("Downloading content from S3 bucket '#{bucket}' at #{s3_path}...")
+      case ExAws.S3.get_object(bucket, s3_path) |> ExAws.request() do
+        {:ok, %{body: body}} -> {:ok, body}
+        {:error, reason} -> {:error, reason}
+      end
+    end
+  end
+
+  @doc """
+  删除S3上的文件
+  """
+  def delete_content(s3_path) do
+    bucket = UserConfig.get_aws_config()[:bucket]
+    if bucket == "" do
+      Logger.error("S3 bucket is not configured.")
+      {:error, :bucket_not_configured}
+    else
+      Logger.info("Deleting content from S3 bucket '#{bucket}' at #{s3_path}...")
+      case ExAws.S3.delete_object(bucket, s3_path) |> ExAws.request() do
+        {:ok, _} -> :ok
+        {:error, reason} -> {:error, reason}
+      end
     end
   end
 end
