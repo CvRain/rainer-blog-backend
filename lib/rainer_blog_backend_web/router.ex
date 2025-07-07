@@ -43,7 +43,14 @@ defmodule RainerBlogBackendWeb.Router do
     post "/one", ArticleController, :create
     get "/one/:id", ArticleController, :show
     delete "/one/:id", ArticleController, :delete
-    patch "/one", ArticleController, :update
+    patch "/one/:id", ArticleController, :update
+    get "/public_list", ArticleController, :public_list
+  end
+
+  scope "/api/article", RainerBlogBackendWeb do
+    pipe_through [:api, :auth]
+
+    get "/list", ArticleController, :list
   end
 
   scope "/api/chapter", RainerBlogBackendWeb do

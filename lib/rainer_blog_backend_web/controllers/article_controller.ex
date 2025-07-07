@@ -2,6 +2,7 @@ defmodule RainerBlogBackendWeb.ArticleController do
   alias RainerBlogBackendWeb.Types.BaseResponse
   use RainerBlogBackendWeb, :controller
   alias RainerBlogBackend.{Article, AwsService, Chapter}
+  import Ecto.Query
 
   def count(conn, _params) do
     data = %{
@@ -138,4 +139,53 @@ defmodule RainerBlogBackendWeb.ArticleController do
         end
     end
   end
+
+  # 登录后可用的分页接口
+  def list(conn, params) do
+    page = (params["page"] || 1) |> to_int() |> max(1)
+    page_size = (params["page_size"] || 10) |> to_int()
+
+    articles =
+      cond do
+        page_size == -1 ->
+          RainerBlogBackend.Repo.all(Article)
+        page_size < 1 ->
+          []
+        true ->
+          offset = (page - 1) * page_size
+          query = from a in Article, limit: ^page_size, offset: ^offset
+          RainerBlogBackend.Repo.all(query)
+      end
+
+    json(conn, BaseResponse.generate(200, "200OK", articles))
+  end
+
+  # 公开接口：只返回 is_active 为 true 的文章，无需登录
+  def public_list(conn, params) do
+    page = (params["page"] || 1) |> to_int() |> max(1)
+    page_size = (params["page_size"] || 10) |> to_int()
+
+    articles =
+      cond do
+        page_size == -1 ->
+          from(a in Article, where: a.is_active == true) |> RainerBlogBackend.Repo.all()
+        page_size < 1 ->
+          []
+        true ->
+          offset = (page - 1) * page_size
+          query = from a in Article, where: a.is_active == true, limit: ^page_size, offset: ^offset
+          RainerBlogBackend.Repo.all(query)
+      end
+
+    json(conn, BaseResponse.generate(200, "200OK", articles))
+  end
+
+  defp to_int(val) when is_integer(val), do: val
+  defp to_int(val) when is_binary(val) do
+    case Integer.parse(val) do
+      {int, _} -> int
+      :error -> 1
+    end
+  end
+  defp to_int(_), do: 1
 end

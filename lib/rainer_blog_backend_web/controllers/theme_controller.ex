@@ -124,7 +124,7 @@ defmodule RainerBlogBackendWeb.ThemeController do
     end
   end
 
-  defp parse_integer(value, default) when is_integer(value), do: value
+  defp parse_integer(value, _default) when is_integer(value), do: value
   defp parse_integer(value, default) when is_binary(value) do
     case Integer.parse(value) do
       {int, _} -> int
@@ -133,7 +133,7 @@ defmodule RainerBlogBackendWeb.ThemeController do
   end
   defp parse_integer(_, default), do: default
 
-  defp parse_boolean(value, default) when is_boolean(value), do: value
+  defp parse_boolean(value, _default) when is_boolean(value), do: value
   defp parse_boolean(value, default) when is_binary(value) do
     case String.downcase(value) do
       "true" -> true
