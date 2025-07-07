@@ -105,7 +105,6 @@ defmodule RainerBlogBackendWeb.ThemeController do
 
   defp validate_theme_config(params) do
     required_fields = ["id"]
-    optional_fields = ["name", "description", "order", "is_active"]
 
     missing_fields = Enum.filter(required_fields, &(is_nil(params[&1]) or params[&1] == ""))
 
@@ -152,5 +151,22 @@ defmodule RainerBlogBackendWeb.ThemeController do
   def all_themes_with_details(conn, _params) do
     themes = Theme.get_all_with_details()
     json(conn, BaseResponse.generate(200, "200OK", themes))
+  end
+
+  def one_theme_with_details(conn, %{"id" => id}) do
+    theme = RainerBlogBackend.Theme.get_one(id)
+    if is_nil(theme) do
+      json(conn, BaseResponse.generate(404, "404NotFound", "主题不存在"))
+    else
+      chapters = RainerBlogBackend.Chapter.get_by_theme(theme.id, 1, 1000)
+      chapters_with_articles = Enum.map(chapters, fn chapter ->
+        articles = RainerBlogBackend.Article.get_by_chapter(chapter.id)
+        chapter_map = Map.from_struct(chapter) |> Map.drop([:__meta__, :__struct__])
+        Map.put(chapter_map, :articles, articles)
+      end)
+      theme_map = Map.from_struct(theme) |> Map.drop([:__meta__, :__struct__])
+      data = Map.put(theme_map, :chapters, chapters_with_articles)
+      json(conn, BaseResponse.generate(200, "200OK", data))
+    end
   end
 end

@@ -108,7 +108,11 @@ defmodule RainerBlogBackendWeb.ArticleController do
     end
   end
 
-  def update(conn, %{"id" => id, "content" => new_content}) do
+  def update(conn, _param) do
+    request_body = conn.body_params
+    id = request_body["id"]
+    new_content = request_body["content"]
+
     case Article |> RainerBlogBackend.Repo.get(id) do
       nil ->
         json(conn, BaseResponse.generate(404, "404NotFound", "文章不存在"))
