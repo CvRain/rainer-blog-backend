@@ -25,7 +25,7 @@ defmodule RainerBlogBackend.Theme do
     theme
     |> cast(attrs, [:name, :description, :order, :is_active])
     |> validate_required([:name])
-    |> validate_format(:name, ~r/^[\p{Han}a-zA-Z0-9_]+$/u, message: "主题名称只能包含中文、字母、数字和下划线")
+    |> validate_format(:name, ~r/^[\p{Han}a-zA-Z0-9_ ]+$/u, message: "主题名称只能包含中文、字母、数字、下划线和空格")
     |> unique_constraint(:name)
   end
 

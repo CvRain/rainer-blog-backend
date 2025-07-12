@@ -37,7 +37,7 @@ defmodule RainerBlogBackendWeb.ThemeController do
     json(conn, BaseResponse.generate(200, "200OK", themes))
   end
 
-  def activite_themes(conn, _params) do
+  def active_themes(conn, _params) do
     themes =
       Theme.get_all()
       |> Enum.filter(fn theme -> theme.is_active end)

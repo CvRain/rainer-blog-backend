@@ -43,7 +43,7 @@ defmodule RainerBlogBackendWeb.Router do
     post "/one", ArticleController, :create
     get "/one/:id", ArticleController, :show
     delete "/one/:id", ArticleController, :delete
-    patch "/one/:id", ArticleController, :update
+    patch "/one", ArticleController, :update
     get "/public_list", ArticleController, :public_list
   end
 
@@ -105,16 +105,15 @@ defmodule RainerBlogBackendWeb.Router do
     post "/one", ThemeController, :create
     patch "/one", ThemeController, :update
     delete "/:id", ThemeController, :remove
+    get "/all", ThemeController, :all_themes
+    get "/all/with_stats", ThemeController, :all_themes_with_stats
+    get "/all/with_details", ThemeController, :all_themes_with_details
   end
 
   scope "/api/theme", RainerBlogBackendWeb do
     pipe_through [:api]
-
     get "/", ThemeController, :index
-    get "/all", ThemeController, :all_themes
-    get "/all/with_stats", ThemeController, :all_themes_with_stats
-    get "/all/with_details", ThemeController, :all_themes_with_details
-    get "/activite", ThemeController, :activite_themes
+    get "/active", ThemeController, :active_themes
     get "/one/:id", ThemeController, :one_theme
     get "/one/:id/with_details", ThemeController, :one_theme_with_details
     get "/count", ThemeController, :count
