@@ -95,12 +95,29 @@ defmodule RainerBlogBackend.Chapter do
   end
 
   @doc """
-  删除指定的Chapter
+  删除指定的Chapter，同时删除其下所有文章及云端资源
   """
-  @spec delete(String.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete(String.t()) :: {:ok, Ecto.Schema.t()} | {:error, any()}
   def delete(id) do
-    Repo.get(__MODULE__, id)
-    |> Repo.delete()
+    alias RainerBlogBackend.{Article, AwsService, Repo}
+
+    Repo.transaction(fn ->
+      # 查找所有属于该章节的文章
+      articles = Article.get_by_chapter(id)
+      # 依次删除每篇文章的云端资源和文章本身
+      Enum.each(articles, fn article ->
+        if article.aws_key do
+          AwsService.delete_content(article.aws_key)
+        end
+        Repo.delete!(article)
+      end)
+      # 删除章节
+      chapter = Repo.get(__MODULE__, id)
+      case chapter do
+        nil -> Repo.rollback(:chapter_not_found)
+        _ -> Repo.delete!(chapter)
+      end
+    end)
   end
 
   @doc """

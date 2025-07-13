@@ -56,8 +56,8 @@ defmodule RainerBlogBackendWeb.Router do
   scope "/api/chapter", RainerBlogBackendWeb do
     pipe_through [:api, :auth]
 
-    post "/", ChapterController, :create
-    put "/:id", ChapterController, :update
+    post "/one", ChapterController, :create
+    patch "/one", ChapterController, :update
     delete "/:id", ChapterController, :delete
   end
 
