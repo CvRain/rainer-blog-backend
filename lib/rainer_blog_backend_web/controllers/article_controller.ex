@@ -18,26 +18,28 @@ defmodule RainerBlogBackendWeb.ArticleController do
     json(conn, BaseResponse.generate(200, "200Ok", data))
   end
 
-  def create(conn, params) do
-    title = params["title"]
-    content = params["content"] || ""
-    chapter_id = params["chapter_id"]
+  def create(conn, _params) do
+    request_body = conn.body_params
+    title = request_body["title"]
+    content = request_body["content"]
+    chapter_id = request_body["chapter_id"]
+    order = request_body["order"] || 0
 
     cond do
       is_nil(title) or title == "" ->
-        json(conn, BaseResponse.generate(400, "400BadRequest", "缺少文章标题"))
+        json(conn, BaseResponse.generate(400, "文章标题不存在", %{field: "title", error: "不能为空"}))
       is_nil(chapter_id) or chapter_id == "" ->
-        json(conn, BaseResponse.generate(400, "400BadRequest", "缺少章节ID"))
+        json(conn, BaseResponse.generate(400, "章节ID不存在", %{field: "chapter_id", error: "不能为空"}))
       true ->
         # 检查chapter是否存在
         chapter = Chapter.get_by_theme(chapter_id, 1, 1) |> List.first() || Chapter.get_all(1, 1000) |> Enum.find(fn c -> c.id == chapter_id end)
         if is_nil(chapter) do
-          json(conn, BaseResponse.generate(400, "400BadRequest", "章节不存在"))
+          json(conn, BaseResponse.generate(400, "章节不存在", %{field: "chapter_id", error: "无效的章节ID"}))
         else
           # 生成aws_key
           uuid = Ecto.UUID.generate()
           aws_key = "articles/#{uuid}.md"
-          file_content = "# \\#{title}\\n\\n#{content}"
+          file_content = "# #{title}\n\n#{content || ""}"
           # 上传到S3
           case AwsService.upload_content(file_content, aws_key) do
             {:ok, _s3_path} ->
@@ -45,23 +47,35 @@ defmodule RainerBlogBackendWeb.ArticleController do
                 title: title,
                 content: content,
                 aws_key: aws_key,
-                order: params["order"] || 0,
+                order: order,
                 is_active: true,
                 chapter_id: chapter_id
               }
               case Article.create(attrs) do
                 {:ok, article} ->
-                  json(conn, BaseResponse.generate(201, "201Created", article))
+                  # 返回更友好的结构
+                  data = %{
+                    id: article.id,
+                    title: article.title,
+                    content: article.content,
+                    aws_key: article.aws_key,
+                    chapter_id: article.chapter_id,
+                    order: article.order,
+                    is_active: article.is_active,
+                    inserted_at: article.inserted_at,
+                    updated_at: article.updated_at
+                  }
+                  json(conn, BaseResponse.generate(201, "文章创建成功", data))
                 {:error, changeset} ->
                   errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
                     Enum.reduce(opts, msg, fn {key, value}, acc ->
                       String.replace(acc, "%{#{key}}", to_string(value))
                     end)
                   end)
-                  json(conn, BaseResponse.generate(400, "400BadRequest", errors))
+                  json(conn, BaseResponse.generate(400, "参数错误", errors))
               end
             {:error, reason} ->
-              json(conn, BaseResponse.generate(500, "500InternalServerError", "S3上传失败: #{inspect(reason)}"))
+              json(conn, BaseResponse.generate(500, "S3上传失败", %{error: inspect(reason)}))
           end
         end
     end
@@ -112,30 +126,60 @@ defmodule RainerBlogBackendWeb.ArticleController do
   def update(conn, _param) do
     request_body = conn.body_params
     id = request_body["id"]
-    new_content = request_body["content"]
+    # 可选字段
+    new_content = request_body["content"] # 简介
+    new_s3_content = request_body["s3_content"] # 正文
+    title = request_body["title"]
+    order = request_body["order"]
+    is_active = request_body["is_active"]
+    chapter_id = request_body["chapter_id"]
 
     case Article |> RainerBlogBackend.Repo.get(id) do
       nil ->
         json(conn, BaseResponse.generate(404, "404NotFound", "文章不存在"))
       article ->
-        # 更新S3内容
-        case AwsService.upload_content(new_content, article.aws_key) do
-          {:ok, _} ->
-            # 更新数据库content字段
-            changeset = Ecto.Changeset.change(article, content: new_content)
-            case RainerBlogBackend.Repo.update(changeset) do
-              {:ok, updated} ->
-                json(conn, BaseResponse.generate(200, "200OK", updated))
-              {:error, changeset} ->
-                errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-                  Enum.reduce(opts, msg, fn {key, value}, acc ->
-                    String.replace(acc, "%{#{key}}", to_string(value))
-                  end)
+        # 先更新 S3 正文内容（如有）
+        if not is_nil(new_s3_content) do
+          case AwsService.upload_content(new_s3_content, article.aws_key) do
+            {:ok, _} -> :ok
+            {:error, reason} ->
+              json(conn, BaseResponse.generate(500, "S3更新失败", %{error: inspect(reason)}))
+              # 直接返回，终止后续流程
+              conn
+          end
+        else
+          # 构建要更新的字段
+          update_attrs =
+            %{}
+            |> Map.merge(if is_nil(new_content), do: %{}, else: %{content: new_content})
+            |> Map.merge(if is_nil(title), do: %{}, else: %{title: title})
+            |> Map.merge(if is_nil(order), do: %{}, else: %{order: order})
+            |> Map.merge(if is_nil(is_active), do: %{}, else: %{is_active: is_active})
+            |> Map.merge(if is_nil(chapter_id), do: %{}, else: %{chapter_id: chapter_id})
+
+          changeset = Ecto.Changeset.change(article, update_attrs)
+          case RainerBlogBackend.Repo.update(changeset) do
+            {:ok, updated} ->
+              data = %{
+                id: updated.id,
+                title: updated.title,
+                content: updated.content,
+                aws_key: updated.aws_key,
+                chapter_id: updated.chapter_id,
+                order: updated.order,
+                is_active: updated.is_active,
+                inserted_at: updated.inserted_at,
+                updated_at: updated.updated_at
+              }
+              json(conn, BaseResponse.generate(200, "文章更新成功", data))
+            {:error, changeset} ->
+              errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                Enum.reduce(opts, msg, fn {key, value}, acc ->
+                  String.replace(acc, "%{#{key}}", to_string(value))
                 end)
-                json(conn, BaseResponse.generate(400, "400BadRequest", errors))
-            end
-          {:error, reason} ->
-            json(conn, BaseResponse.generate(500, "500InternalServerError", "S3更新失败: #{inspect(reason)}"))
+              end)
+              json(conn, BaseResponse.generate(400, "参数错误", errors))
+          end
         end
     end
   end

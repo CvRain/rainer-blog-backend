@@ -32,7 +32,7 @@ defmodule RainerBlogBackend.Article do
   def changeset(article, attrs) do
     article
     |> cast(attrs, [:title, :content, :aws_key, :order, :is_active, :chapter_id])
-    |> validate_required([:title, :content, :aws_key, :order, :is_active, :chapter_id])
+    |> validate_required([:title, :aws_key, :order, :is_active, :chapter_id])
   end
 
   @doc """
