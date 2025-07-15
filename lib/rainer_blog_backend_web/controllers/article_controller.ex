@@ -141,45 +141,46 @@ defmodule RainerBlogBackendWeb.ArticleController do
         # 先更新 S3 正文内容（如有）
         if not is_nil(new_s3_content) do
           case AwsService.upload_content(new_s3_content, article.aws_key) do
-            {:ok, _} -> :ok
+            {:ok, _} ->
+              :ok
             {:error, reason} ->
-              json(conn, BaseResponse.generate(500, "S3更新失败", %{error: inspect(reason)}))
-              # 直接返回，终止后续流程
+              # 失败时直接返回 conn，终止后续流程
+              conn = json(conn, BaseResponse.generate(500, "S3更新失败", %{error: inspect(reason)}))
+              # 直接 return conn
               conn
           end
-        else
-          # 构建要更新的字段
-          update_attrs =
-            %{}
-            |> Map.merge(if is_nil(new_content), do: %{}, else: %{content: new_content})
-            |> Map.merge(if is_nil(title), do: %{}, else: %{title: title})
-            |> Map.merge(if is_nil(order), do: %{}, else: %{order: order})
-            |> Map.merge(if is_nil(is_active), do: %{}, else: %{is_active: is_active})
-            |> Map.merge(if is_nil(chapter_id), do: %{}, else: %{chapter_id: chapter_id})
+        end
+        # 构建要更新的字段
+        update_attrs =
+          %{}
+          |> Map.merge(if is_nil(new_content), do: %{}, else: %{content: new_content})
+          |> Map.merge(if is_nil(title), do: %{}, else: %{title: title})
+          |> Map.merge(if is_nil(order), do: %{}, else: %{order: order})
+          |> Map.merge(if is_nil(is_active), do: %{}, else: %{is_active: is_active})
+          |> Map.merge(if is_nil(chapter_id), do: %{}, else: %{chapter_id: chapter_id})
 
-          changeset = Ecto.Changeset.change(article, update_attrs)
-          case RainerBlogBackend.Repo.update(changeset) do
-            {:ok, updated} ->
-              data = %{
-                id: updated.id,
-                title: updated.title,
-                content: updated.content,
-                aws_key: updated.aws_key,
-                chapter_id: updated.chapter_id,
-                order: updated.order,
-                is_active: updated.is_active,
-                inserted_at: updated.inserted_at,
-                updated_at: updated.updated_at
-              }
-              json(conn, BaseResponse.generate(200, "文章更新成功", data))
-            {:error, changeset} ->
-              errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-                Enum.reduce(opts, msg, fn {key, value}, acc ->
-                  String.replace(acc, "%{#{key}}", to_string(value))
-                end)
+        changeset = Ecto.Changeset.change(article, update_attrs)
+        case RainerBlogBackend.Repo.update(changeset) do
+          {:ok, updated} ->
+            data = %{
+              id: updated.id,
+              title: updated.title,
+              content: updated.content,
+              aws_key: updated.aws_key,
+              chapter_id: updated.chapter_id,
+              order: updated.order,
+              is_active: updated.is_active,
+              inserted_at: updated.inserted_at,
+              updated_at: updated.updated_at
+            }
+            json(conn, BaseResponse.generate(200, "文章更新成功", data))
+          {:error, changeset} ->
+            errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+              Enum.reduce(opts, msg, fn {key, value}, acc ->
+                String.replace(acc, "%{#{key}}", to_string(value))
               end)
-              json(conn, BaseResponse.generate(400, "参数错误", errors))
-          end
+            end)
+            json(conn, BaseResponse.generate(400, "参数错误", errors))
         end
     end
   end
