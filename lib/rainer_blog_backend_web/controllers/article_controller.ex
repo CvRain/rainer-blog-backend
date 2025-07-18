@@ -97,7 +97,9 @@ defmodule RainerBlogBackendWeb.ArticleController do
               chapter_id: article.chapter_id,
               s3_content: s3_content,
               inserted_at: article.inserted_at,
-              updated_at: article.updated_at
+              updated_at: article.updated_at,
+              order: article.order,
+              is_active: article.is_active
             }
             json(conn, BaseResponse.generate(200, "200OK", data))
           {:error, reason} ->
