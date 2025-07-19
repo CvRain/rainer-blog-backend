@@ -169,4 +169,13 @@ defmodule RainerBlogBackendWeb.ThemeController do
       json(conn, BaseResponse.generate(200, "200OK", data))
     end
   end
+
+  def public_active_details(conn, %{"id" => id}) do
+    case Theme.get_active_details(id) do
+      nil ->
+        json(conn, BaseResponse.generate(404, "未找到激活主题或主题未激活", nil))
+      theme_map ->
+        json(conn, BaseResponse.generate(200, "OK", theme_map))
+    end
+  end
 end

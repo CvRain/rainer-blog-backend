@@ -169,4 +169,34 @@ defmodule RainerBlogBackend.Theme do
       Map.put(theme_map, :chapters, chapters_with_articles)
     end)
   end
+
+  @doc """
+  获取指定 theme 下 is_active 为 true 的章节和文章
+  """
+  def get_active_details(theme_id) do
+    import Ecto.Query
+    alias RainerBlogBackend.{Chapter, Article, Repo}
+
+    # 获取激活的章节
+    chapters = Chapter
+      |> where([c], c.theme_id == ^theme_id and c.is_active == true)
+      |> order_by([c], asc: c.order)
+      |> Repo.all()
+
+    # 为每个章节获取激活的文章
+    chapters_with_articles = Enum.map(chapters, fn chapter ->
+      articles = Article.get_active_by_chapter(chapter.id)
+      chapter_map = Map.from_struct(chapter) |> Map.drop([:__meta__, :__struct__])
+      Map.put(chapter_map, :articles, articles)
+    end)
+
+    # 获取主题本身
+    theme = Repo.get(__MODULE__, theme_id)
+    if theme && theme.is_active do
+      theme_map = Map.from_struct(theme) |> Map.drop([:__meta__, :__struct__])
+      Map.put(theme_map, :chapters, chapters_with_articles)
+    else
+      nil
+    end
+  end
 end
