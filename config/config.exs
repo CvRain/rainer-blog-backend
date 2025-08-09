@@ -147,7 +147,14 @@ end
 
 # Configure CORS
 config :cors_plug,
-  origin: ["http://localhost:5173"],
+  origin: [
+    "http://localhost:4200",
+    "http://localhost:4200",
+    "http://ecs.cloudvl.cn",
+    "http://cvrain.cloudvl.cn",
+    "https://cvrain.cloudvl.cn",
+    "https://ecs.cloudvl.cn"
+    ],
   max_age: 86400,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   headers: [

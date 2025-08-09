@@ -1,7 +1,7 @@
 defmodule RainerBlogBackendWeb.ArticleController do
   alias RainerBlogBackendWeb.Types.BaseResponse
   use RainerBlogBackendWeb, :controller
-  alias RainerBlogBackend.{Article, AwsService, Chapter}
+  alias RainerBlogBackend.{Article, AwsService, Chapter, ArticleContentCache}
   import Ecto.Query
 
   def count(conn, _params) do
@@ -21,7 +21,7 @@ defmodule RainerBlogBackendWeb.ArticleController do
   def create(conn, _params) do
     request_body = conn.body_params
     title = request_body["title"]
-    content = request_body["content"]
+    subtitle = request_body["subtitle"]
     chapter_id = request_body["chapter_id"]
     order = request_body["order"] || 0
 
@@ -39,13 +39,13 @@ defmodule RainerBlogBackendWeb.ArticleController do
           # 生成aws_key
           uuid = Ecto.UUID.generate()
           aws_key = "articles/#{uuid}.md"
-          file_content = "# #{title}\n\n#{content || ""}"
+          file_content = "# #{title}\n\n#{subtitle || ""}"
           # 上传到S3
           case AwsService.upload_content(file_content, aws_key) do
             {:ok, _s3_path} ->
               attrs = %{
                 title: title,
-                content: content,
+                subtitle: subtitle,
                 aws_key: aws_key,
                 order: order,
                 is_active: true,
@@ -57,7 +57,7 @@ defmodule RainerBlogBackendWeb.ArticleController do
                   data = %{
                     id: article.id,
                     title: article.title,
-                    content: article.content,
+                    subtitle: article.subtitle,
                     aws_key: article.aws_key,
                     chapter_id: article.chapter_id,
                     order: article.order,
@@ -86,24 +86,49 @@ defmodule RainerBlogBackendWeb.ArticleController do
       nil ->
         json(conn, BaseResponse.generate(404, "404NotFound", "文章不存在"))
       article ->
-        # 从S3下载内容
-        case AwsService.download_content(article.aws_key) do
-          {:ok, s3_content} ->
+        # 尝试从缓存获取内容
+        cached_content = ArticleContentCache.get_by_article_id(article.id)
+        
+        cond do
+          cached_content != nil ->
+            # 有缓存，直接返回缓存内容
             data = %{
               id: article.id,
               title: article.title,
-              content: article.content,
+              subtitle: article.subtitle,
               aws_key: article.aws_key,
               chapter_id: article.chapter_id,
-              s3_content: s3_content,
+              s3_content: cached_content.content,
               inserted_at: article.inserted_at,
               updated_at: article.updated_at,
               order: article.order,
               is_active: article.is_active
             }
             json(conn, BaseResponse.generate(200, "200OK", data))
-          {:error, reason} ->
-            json(conn, BaseResponse.generate(500, "500InternalServerError", "S3下载失败: #{inspect(reason)}"))
+          
+          true ->
+            # 没有缓存，从S3下载内容
+            case AwsService.download_content(article.aws_key) do
+              {:ok, s3_content} ->
+                # 缓存内容
+                ArticleContentCache.upsert_content(article.id, s3_content)
+                
+                data = %{
+                  id: article.id,
+                  title: article.title,
+                  subtitle: article.subtitle,
+                  aws_key: article.aws_key,
+                  chapter_id: article.chapter_id,
+                  s3_content: s3_content,
+                  inserted_at: article.inserted_at,
+                  updated_at: article.updated_at,
+                  order: article.order,
+                  is_active: article.is_active
+                }
+                json(conn, BaseResponse.generate(200, "200OK", data))
+              {:error, reason} ->
+                json(conn, BaseResponse.generate(500, "500InternalServerError", "S3下载失败: #{inspect(reason)}"))
+            end
         end
     end
   end
@@ -115,8 +140,8 @@ defmodule RainerBlogBackendWeb.ArticleController do
       article ->
         # 先尝试删除S3文件
         _ = AwsService.delete_content(article.aws_key)
-        # 删除数据库记录
-        case RainerBlogBackend.Repo.delete(article) do
+        # 删除数据库记录和缓存
+        case Article.delete(article) do
           {:ok, _} ->
             json(conn, BaseResponse.generate(200, "200OK", "删除成功"))
           {:error, reason} ->
@@ -129,7 +154,7 @@ defmodule RainerBlogBackendWeb.ArticleController do
     request_body = conn.body_params
     id = request_body["id"]
     # 可选字段
-    new_content = request_body["content"] # 简介
+    new_subtitle = request_body["subtitle"] # 简介
     new_s3_content = request_body["s3_content"] # 正文
     title = request_body["title"]
     order = request_body["order"]
@@ -141,48 +166,59 @@ defmodule RainerBlogBackendWeb.ArticleController do
         json(conn, BaseResponse.generate(404, "404NotFound", "文章不存在"))
       article ->
         # 先更新 S3 正文内容（如有）
-        if not is_nil(new_s3_content) do
-          case AwsService.upload_content(new_s3_content, article.aws_key) do
-            {:ok, _} ->
-              :ok
-            {:error, reason} ->
-              # 失败时直接返回 conn，终止后续流程
-              conn = json(conn, BaseResponse.generate(500, "S3更新失败", %{error: inspect(reason)}))
-              # 直接 return conn
-              conn
+        s3_update_result = 
+          if not is_nil(new_s3_content) do
+            case AwsService.upload_content(new_s3_content, article.aws_key) do
+              {:ok, _} ->
+                # 更新成功后删除缓存，让下次请求重新缓存最新内容
+                ArticleContentCache.delete_by_article_id(article.id)
+                :ok
+              {:error, reason} ->
+                # 失败时直接返回 conn，终止后续流程
+                conn = json(conn, BaseResponse.generate(500, "S3更新失败", %{error: inspect(reason)}))
+                # 直接 return conn
+                {:error, conn}
+            end
+          else
+            :ok
           end
-        end
-        # 构建要更新的字段
-        update_attrs =
-          %{}
-          |> Map.merge(if is_nil(new_content), do: %{}, else: %{content: new_content})
-          |> Map.merge(if is_nil(title), do: %{}, else: %{title: title})
-          |> Map.merge(if is_nil(order), do: %{}, else: %{order: order})
-          |> Map.merge(if is_nil(is_active), do: %{}, else: %{is_active: is_active})
-          |> Map.merge(if is_nil(chapter_id), do: %{}, else: %{chapter_id: chapter_id})
+        
+        case s3_update_result do
+          {:error, conn} -> 
+            conn  # 如果已经返回了错误响应，直接返回conn
+          _ ->
+            # 构建要更新的字段
+            update_attrs =
+              %{}
+              |> Map.merge(if is_nil(new_subtitle), do: %{}, else: %{subtitle: new_subtitle})
+              |> Map.merge(if is_nil(title), do: %{}, else: %{title: title})
+              |> Map.merge(if is_nil(order), do: %{}, else: %{order: order})
+              |> Map.merge(if is_nil(is_active), do: %{}, else: %{is_active: is_active})
+              |> Map.merge(if is_nil(chapter_id), do: %{}, else: %{chapter_id: chapter_id})
 
-        changeset = Ecto.Changeset.change(article, update_attrs)
-        case RainerBlogBackend.Repo.update(changeset) do
-          {:ok, updated} ->
-            data = %{
-              id: updated.id,
-              title: updated.title,
-              content: updated.content,
-              aws_key: updated.aws_key,
-              chapter_id: updated.chapter_id,
-              order: updated.order,
-              is_active: updated.is_active,
-              inserted_at: updated.inserted_at,
-              updated_at: updated.updated_at
-            }
-            json(conn, BaseResponse.generate(200, "文章更新成功", data))
-          {:error, changeset} ->
-            errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-              Enum.reduce(opts, msg, fn {key, value}, acc ->
-                String.replace(acc, "%{#{key}}", to_string(value))
-              end)
-            end)
-            json(conn, BaseResponse.generate(400, "参数错误", errors))
+            changeset = Ecto.Changeset.change(article, update_attrs)
+            case RainerBlogBackend.Repo.update(changeset) do
+              {:ok, updated} ->
+                data = %{
+                  id: updated.id,
+                  title: updated.title,
+                  subtitle: updated.subtitle,
+                  aws_key: updated.aws_key,
+                  chapter_id: updated.chapter_id,
+                  order: updated.order,
+                  is_active: updated.is_active,
+                  inserted_at: updated.inserted_at,
+                  updated_at: updated.updated_at
+                }
+                json(conn, BaseResponse.generate(200, "文章更新成功", data))
+              {:error, changeset} ->
+                errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                  Enum.reduce(opts, msg, fn {key, value}, acc ->
+                    String.replace(acc, "%{#{key}}", to_string(value))
+                  end)
+                end)
+                json(conn, BaseResponse.generate(400, "参数错误", errors))
+            end
         end
     end
   end

@@ -13,7 +13,7 @@ defmodule RainerBlogBackend.AwsService do
            access_key_id: access_key_id,
            secret_access_key: secret_access_key,
            region: region,
-           bucket: bucket,
+           bucket: _bucket,
            endpoint: endpoint
          } <- RainerBlogBackend.UserConfig.get_aws_config() do
       if access_key_id != "" and secret_access_key != "" and region != "" and endpoint != "" do
