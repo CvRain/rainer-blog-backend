@@ -23,12 +23,12 @@ defmodule RainerBlogBackend.Resource do
   @doc false
   def changeset(resource, attrs) do
     resource
-    |> cast(attrs, [:name, :description, :file_type, :file_size, :aws_key, :order, :is_active])
+    |> cast(attrs, [:name, :description, :file_type, :file_size, :aws_key, :order, :is_active, :collection_id])
     |> validate_required([:name, :description, :file_type, :file_size, :aws_key, :order, :is_active])
   end
 
    @doc """
-    获取存在的collection个数
+    获取存在的resource个数
   """
   @spec count() :: integer()
   def count() do
@@ -36,7 +36,7 @@ defmodule RainerBlogBackend.Resource do
   end
 
   @doc """
-    获取本周创建的collection个数
+    获取本周创建的resource个数
   """
   @spec count_append_weekly() :: integer()
   def count_append_weekly() do
@@ -46,5 +46,31 @@ defmodule RainerBlogBackend.Resource do
     __MODULE__
     |> where([r], r.inserted_at >= ^start_of_week)
     |> Repo.aggregate(:count, :id)
+  end
+
+  def list_resources() do
+    Repo.all(__MODULE__)
+  end
+
+  def get_resource(id) do
+    Repo.get(__MODULE__, id)
+  end
+
+  def create_resource(attrs \\ %{}) do
+    %__MODULE__{}
+    |> changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_resource(%__MODULE__{} = resource, attrs) do
+    resource
+    |> changeset(attrs)
+    |> Repo.update()
+  end
+
+  def delete_resource(%__MODULE__{} = resource) do
+    # 先尝试删除S3文件
+    _ = RainerBlogBackend.AwsService.delete_content(resource.aws_key)
+    Repo.delete(resource)
   end
 end

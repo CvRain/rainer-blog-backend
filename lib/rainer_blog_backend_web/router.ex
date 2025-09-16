@@ -46,7 +46,7 @@ defmodule RainerBlogBackendWeb.Router do
     # 获取文章总数
     get "/count", ArticleController, :count
     # 获取本周新增文章数
-    get "/count/this_week", ArticleController, :count_append_weekly
+    get "/count/this_week", ArticleController, :count_this_week
     # 创建文章
     post "/one", ArticleController, :create
     # 获取单篇文章详情
@@ -99,12 +99,8 @@ defmodule RainerBlogBackendWeb.Router do
 
   scope "/api/collection", RainerBlogBackendWeb do
     pipe_through [:api, :auth]
-    # 创建收藏集
-    post "/one", CollectionController, :create
-    # 更新收藏集
-    put "/:id", CollectionController, :update
-    # 删除收藏集
-    delete "/:id", CollectionController, :delete
+    # 收藏集 CRUD 接口
+    resources "/", CollectionController, except: [:new, :edit]
   end
 
   # 资源相关接口
@@ -119,6 +115,11 @@ defmodule RainerBlogBackendWeb.Router do
   scope "/api/resource", RainerBlogBackendWeb do
     pipe_through [:api, :auth]
     # 预留资源管理接口
+    resources "/", ResourceController, except: [:new, :edit]
+    # 上传资源文件
+    post "/upload", ResourceController, :upload
+    # 下载资源文件
+    get "/download/:id", ResourceController, :download
   end
 
   # 主题相关接口

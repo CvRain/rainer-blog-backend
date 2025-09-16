@@ -3,6 +3,8 @@ defmodule RainerBlogBackend.Collection do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias RainerBlogBackend.{Repo, Resource}
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "collections" do
@@ -26,7 +28,7 @@ defmodule RainerBlogBackend.Collection do
   """
   @spec count() :: integer()
   def count() do
-    RainerBlogBackend.Repo.aggregate(RainerBlogBackend.Collection, :count, :id)
+    Repo.aggregate(__MODULE__, :count, :id)
   end
 
   @doc """
@@ -37,36 +39,62 @@ defmodule RainerBlogBackend.Collection do
     now = DateTime.utc_now()
     start_of_week = DateTime.add(now, -DateTime.to_unix(now) |> rem(7 * 24 * 60 * 60), :second)
 
-    RainerBlogBackend.Collection
+    __MODULE__
     |> where([c], c.inserted_at >= ^start_of_week)
-    |> RainerBlogBackend.Repo.aggregate(:count, :id)
+    |> Repo.aggregate(:count, :id)
   end
 
   @doc """
     创建collection
   """
-  @spec create(String.t(), String.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
-  def create(name, description) do
-    %RainerBlogBackend.Collection{
-      name: name,
-      description: description,
-      order: 0,
-      is_active: true
-    }
-    |> RainerBlogBackend.Repo.insert()
+  @spec create(map()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  def create(attrs) do
+    %__MODULE__{}
+    |> changeset(attrs)
+    |> Repo.insert()
   end
 
   @doc """
-    删除collection
+    获取所有collection
   """
-  def remove(id) do
-    RainerBlogBackend.Repo.delete(id)
+  def list_collections() do
+    Repo.all(__MODULE__)
+  end
+
+  @doc """
+    根据ID获取collection
+  """
+  def get_collection(id) do
+    Repo.get(__MODULE__, id)
   end
 
   @doc """
     更新collection
   """
-  def update(id, name, description) do
-    RainerBlogBackend.Repo.update(id, name: name, description: description)
+  def update_collection(%__MODULE__{} = collection, attrs) do
+    collection
+    |> changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+    删除collection及其中的所有resource
+  """
+  def delete_collection(%__MODULE__{} = collection) do
+    # 开始数据库事务
+    Repo.transaction(fn ->
+      # 先删除该collection下的所有resource
+      from(r in Resource, where: r.collection_id == ^collection.id)
+      |> Repo.all()
+      |> Enum.each(fn resource ->
+        Resource.delete_resource(resource)
+      end)
+      
+      # 然后删除collection本身
+      case Repo.delete(collection) do
+        {:ok, collection} -> collection
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
   end
 end
