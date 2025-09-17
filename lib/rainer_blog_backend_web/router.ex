@@ -95,12 +95,20 @@ defmodule RainerBlogBackendWeb.Router do
     get "/count", CollectionController, :count
     # 获取本周新增收藏集数
     get "/count/this_week", CollectionController, :count_append_weekly
+
+    get "/all/active", CollectionController, :show_all_active
+
+    get "/:id", CollectionController, :show
   end
 
   scope "/api/collection", RainerBlogBackendWeb do
     pipe_through [:api, :auth]
-    # 收藏集 CRUD 接口
-    resources "/", CollectionController, except: [:new, :edit]
+
+    delete "/:id", CollectionController, :delete
+
+    patch "/:id", CollectionController, :update
+
+    get "/all", CollectionController, :show_all
   end
 
   # 资源相关接口

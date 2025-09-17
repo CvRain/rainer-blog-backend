@@ -1,7 +1,7 @@
 defmodule RainerBlogBackendWeb.CollectionController do
   use RainerBlogBackendWeb, :controller
 
-  alias RainerBlogBackend.{Collection, Resource}
+  alias RainerBlogBackend.{Collection}
   alias RainerBlogBackendWeb.Types.BaseResponse
 
   action_fallback RainerBlogBackendWeb.ErrorJSON
@@ -13,9 +13,10 @@ defmodule RainerBlogBackendWeb.CollectionController do
 
   def create(conn, %{"collection" => collection_params}) do
     with {:ok, %Collection{} = collection} <- Collection.create(collection_params) do
-      conn
-      |> put_status(:created)
-      |> render("show.json", collection: collection)
+      json(
+        conn,
+        BaseResponse.generate(201, "Collection created successfully", %{id: collection.id})
+      )
     end
   end
 
@@ -31,11 +32,23 @@ defmodule RainerBlogBackendWeb.CollectionController do
         })
 
       collection ->
-        render(conn, "show.json", collection: collection)
+        json(conn, BaseResponse.generate(200, "200Ok", collection))
     end
   end
 
-  def update(conn, %{"id" => id, "collection" => collection_params}) do
+  def show_all(conn, _params) do
+    collections = Collection.list_collections()
+    json(conn, BaseResponse.generate(200, "200Ok", collections))
+  end
+
+  def show_all_active(conn, _params) do
+    collections = Collection.list_active_collections()
+    json(conn, BaseResponse.generate(200, "200Ok", collections))
+  end
+
+  def update(conn, %{"id" => id}) do
+    body_params = conn.body_params
+
     case Collection.get_collection(id) do
       nil ->
         conn
@@ -47,14 +60,20 @@ defmodule RainerBlogBackendWeb.CollectionController do
         })
 
       collection ->
-        with {:ok, %Collection{} = collection} <- Collection.update_collection(collection, collection_params) do
-          render(conn, "show.json", collection: collection)
+        with {:ok, %Collection{} = updated_collection} <-
+               Collection.update_collection(collection, body_params) do
+          json(
+            conn,
+            BaseResponse.generate(200, "Collection updated successfully", updated_collection)
+          )
         end
     end
   end
 
-  def delete(conn, %{"id" => id}) do
-    case Collection.get_collection(id) do
+  def delete(conn, _param) do
+    remove_id = conn.body_params["id"]
+
+    case Collection.get_collection(remove_id) do
       nil ->
         conn
         |> put_status(:not_found)
@@ -66,7 +85,10 @@ defmodule RainerBlogBackendWeb.CollectionController do
 
       collection ->
         with {:ok, %Collection{}} <- Collection.delete_collection(collection) do
-          send_resp(conn, :no_content, "")
+          json(
+            conn,
+            BaseResponse.generate(200, "Collection and its resources deleted successfully", nil)
+          )
         end
     end
   end
@@ -78,6 +100,7 @@ defmodule RainerBlogBackendWeb.CollectionController do
     data = %{
       count: Collection.count()
     }
+
     json(conn, BaseResponse.generate(200, "200Ok", data))
   end
 
@@ -88,6 +111,7 @@ defmodule RainerBlogBackendWeb.CollectionController do
     data = %{
       count: Collection.count_append_weekly()
     }
+
     json(conn, BaseResponse.generate(200, "200Ok", data))
   end
 end

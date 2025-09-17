@@ -61,6 +61,12 @@ defmodule RainerBlogBackend.Collection do
     Repo.all(__MODULE__)
   end
 
+  def list_active_collections() do
+    __MODULE__
+    |> where([c], c.is_active == true)
+    |> Repo.all()
+  end
+
   @doc """
     根据ID获取collection
   """
@@ -89,7 +95,7 @@ defmodule RainerBlogBackend.Collection do
       |> Enum.each(fn resource ->
         Resource.delete_resource(resource)
       end)
-      
+
       # 然后删除collection本身
       case Repo.delete(collection) do
         {:ok, collection} -> collection
