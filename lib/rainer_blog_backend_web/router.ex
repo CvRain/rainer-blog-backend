@@ -118,6 +118,10 @@ defmodule RainerBlogBackendWeb.Router do
     get "/count", ResourceController, :count
     # 获取本周新增资源数
     get "/count/this_week", ResourceController, :count_append_weekly
+    # 获取资源的预签名URL
+    get "/url/:id", ResourceController, :get_url
+    # 获取资源的Base64编码内容
+    get "/base64/:id", ResourceController, :get_base64
   end
 
   scope "/api/resource", RainerBlogBackendWeb do

@@ -8,14 +8,28 @@ defmodule RainerBlogBackendWeb.ResourceController do
 
   def index(conn, _params) do
     resources = Resource.list_resources()
-    render(conn, "index.json", resources: resources)
+    json(conn, BaseResponse.generate(200, "200Ok", resources))
   end
 
   def create(conn, %{"resource" => resource_params}) do
     with {:ok, %Resource{} = resource} <- Resource.create_resource(resource_params) do
+      data = %{
+        id: resource.id,
+        name: resource.name,
+        description: resource.description,
+        file_type: resource.file_type,
+        file_size: resource.file_size,
+        aws_key: resource.aws_key,
+        order: resource.order,
+        is_active: resource.is_active,
+        collection_id: resource.collection_id,
+        inserted_at: resource.inserted_at,
+        updated_at: resource.updated_at
+      }
+      
       conn
       |> put_status(:created)
-      |> render("show.json", resource: resource)
+      |> json(BaseResponse.generate(201, "资源创建成功", data))
     end
   end
 
@@ -93,16 +107,24 @@ defmodule RainerBlogBackendWeb.ResourceController do
   def show(conn, %{"id" => id}) do
     case Resource.get_resource(id) do
       nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%BaseResponse{
-          code: 404,
-          message: "Resource not found",
-          data: nil
-        })
+        json(conn, BaseResponse.generate(404, "Resource not found", nil))
 
       resource ->
-        render(conn, "show.json", resource: resource)
+        data = %{
+          id: resource.id,
+          name: resource.name,
+          description: resource.description,
+          file_type: resource.file_type,
+          file_size: resource.file_size,
+          aws_key: resource.aws_key,
+          order: resource.order,
+          is_active: resource.is_active,
+          collection_id: resource.collection_id,
+          inserted_at: resource.inserted_at,
+          updated_at: resource.updated_at
+        }
+        
+        json(conn, BaseResponse.generate(200, "200Ok", data))
     end
   end
 
@@ -110,13 +132,7 @@ defmodule RainerBlogBackendWeb.ResourceController do
   def download(conn, %{"id" => id}) do
     case Resource.get_resource(id) do
       nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%BaseResponse{
-          code: 404,
-          message: "Resource not found",
-          data: nil
-        })
+        json(conn, BaseResponse.generate(404, "Resource not found", nil))
 
       resource ->
         # 从S3下载内容
@@ -133,20 +149,74 @@ defmodule RainerBlogBackendWeb.ResourceController do
     end
   end
 
+  # 获取资源的预签名URL
+  def get_url(conn, %{"id" => id}) do
+    case Resource.get_resource(id) do
+      nil ->
+        json(conn, BaseResponse.generate(404, "Resource not found", nil))
+
+      resource ->
+        case AwsService.generate_presigned_url(resource.aws_key) do
+          {:ok, url} ->
+            data = %{
+              id: resource.id,
+              name: resource.name,
+              url: url,
+              file_type: resource.file_type
+            }
+            json(conn, BaseResponse.generate(200, "获取URL成功", data))
+
+          {:error, reason} ->
+            json(conn, BaseResponse.generate(500, "生成URL失败", %{error: inspect(reason)}))
+        end
+    end
+  end
+
+  # 获取资源的Base64编码内容
+  def get_base64(conn, %{"id" => id}) do
+    case Resource.get_resource(id) do
+      nil ->
+        json(conn, BaseResponse.generate(404, "Resource not found", nil))
+
+      resource ->
+        case AwsService.get_base64_content(resource.aws_key) do
+          {:ok, base64_content} ->
+            data = %{
+              id: resource.id,
+              name: resource.name,
+              base64_content: base64_content,
+              file_type: resource.file_type
+            }
+            json(conn, BaseResponse.generate(200, "获取Base64内容成功", data))
+
+          {:error, reason} ->
+            json(conn, BaseResponse.generate(500, "获取Base64内容失败", %{error: inspect(reason)}))
+        end
+    end
+  end
+
   def update(conn, %{"id" => id, "resource" => resource_params}) do
     case Resource.get_resource(id) do
       nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%BaseResponse{
-          code: 404,
-          message: "Resource not found",
-          data: nil
-        })
+        json(conn, BaseResponse.generate(404, "Resource not found", nil))
 
       resource ->
         with {:ok, %Resource{} = resource} <- Resource.update_resource(resource, resource_params) do
-          render(conn, "show.json", resource: resource)
+          data = %{
+            id: resource.id,
+            name: resource.name,
+            description: resource.description,
+            file_type: resource.file_type,
+            file_size: resource.file_size,
+            aws_key: resource.aws_key,
+            order: resource.order,
+            is_active: resource.is_active,
+            collection_id: resource.collection_id,
+            inserted_at: resource.inserted_at,
+            updated_at: resource.updated_at
+          }
+          
+          json(conn, BaseResponse.generate(200, "资源更新成功", data))
         end
     end
   end
@@ -154,20 +224,14 @@ defmodule RainerBlogBackendWeb.ResourceController do
   def delete(conn, %{"id" => id}) do
     case Resource.get_resource(id) do
       nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%BaseResponse{
-          code: 404,
-          message: "Resource not found",
-          data: nil
-        })
+        json(conn, BaseResponse.generate(404, "Resource not found", nil))
 
       resource ->
         # 先尝试删除S3文件
         _ = AwsService.delete_content(resource.aws_key)
 
         with {:ok, %Resource{}} <- Resource.delete_resource(resource) do
-          send_resp(conn, :no_content, "")
+          json(conn, BaseResponse.generate(200, "资源删除成功", nil))
         end
     end
   end

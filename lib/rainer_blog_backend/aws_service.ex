@@ -107,4 +107,47 @@ defmodule RainerBlogBackend.AwsService do
       end
     end
   end
+
+  @doc """
+  生成S3对象的预签名URL
+  - s3_path: S3路径
+  - expires_in: 过期时间（秒），默认3600秒（1小时）
+  """
+  def generate_presigned_url(s3_path, expires_in \\ 3600) do
+    bucket = UserConfig.get_aws_config()[:bucket]
+    if bucket == "" do
+      Logger.error("S3 bucket is not configured.")
+      {:error, :bucket_not_configured}
+    else
+      try do
+        # 生成预签名URL
+        url = ExAws.S3.presigned_url(
+          ExAws.Config.new(:s3),
+          :get,
+          bucket,
+          s3_path,
+          expires_in: expires_in
+        )
+        {:ok, url}
+      rescue
+        e ->
+          Logger.error("Error generating presigned URL: #{inspect(e)}")
+          {:error, :url_generation_failed}
+      end
+    end
+  end
+
+  @doc """
+  获取S3对象的Base64编码内容
+  - s3_path: S3路径
+  """
+  def get_base64_content(s3_path) do
+    case download_content(s3_path) do
+      {:ok, content} ->
+        base64_content = Base.encode64(content)
+        {:ok, base64_content}
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
 end
