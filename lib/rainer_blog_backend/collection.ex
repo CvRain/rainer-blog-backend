@@ -5,6 +5,7 @@ defmodule RainerBlogBackend.Collection do
 
   alias RainerBlogBackend.{Repo, Resource}
 
+  @derive {Jason.Encoder, only: [:id, :name, :description, :order, :is_active, :inserted_at, :updated_at]}
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "collections" do
@@ -21,6 +22,7 @@ defmodule RainerBlogBackend.Collection do
     collection
     |> cast(attrs, [:name, :description, :order, :is_active])
     |> validate_required([:name, :description, :order, :is_active])
+    |> unique_constraint(:name)
   end
 
   @doc """
@@ -52,6 +54,42 @@ defmodule RainerBlogBackend.Collection do
     %__MODULE__{}
     |> changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+    创建collection，包含默认值处理
+  """
+  @spec create_with_defaults(map()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  def create_with_defaults(attrs) do
+    # 检查必填字段
+    case attrs["name"] do
+      nil -> 
+        # 创建一个带错误的changeset
+        %__MODULE__{}
+        |> changeset(attrs)
+        |> Map.put(:valid?, false)
+        |> Ecto.Changeset.add_error(:name, "can't be blank")
+      
+      "" -> 
+        # 创建一个带错误的changeset
+        %__MODULE__{}
+        |> changeset(attrs)
+        |> Map.put(:valid?, false)
+        |> Ecto.Changeset.add_error(:name, "can't be blank")
+      
+      _ ->
+        # 为可选字段设置默认值
+        attrs_with_defaults = %{
+          "name" => attrs["name"],
+          "description" => Map.get(attrs, "description", ""),
+          "is_active" => Map.get(attrs, "is_active", true),
+          "order" => Map.get(attrs, "order", 0)
+        }
+        
+        %__MODULE__{}
+        |> changeset(attrs_with_defaults)
+        |> Repo.insert()
+    end
   end
 
   @doc """

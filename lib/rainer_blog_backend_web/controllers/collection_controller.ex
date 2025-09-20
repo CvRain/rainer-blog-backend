@@ -4,19 +4,27 @@ defmodule RainerBlogBackendWeb.CollectionController do
   alias RainerBlogBackend.{Collection}
   alias RainerBlogBackendWeb.Types.BaseResponse
 
-  action_fallback RainerBlogBackendWeb.ErrorJSON
-
   def index(conn, _params) do
     collections = Collection.list_collections()
     render(conn, "index.json", collections: collections)
   end
 
-  def create(conn, %{"collection" => collection_params}) do
-    with {:ok, %Collection{} = collection} <- Collection.create(collection_params) do
-      json(
-        conn,
-        BaseResponse.generate(201, "Collection created successfully", %{id: collection.id})
-      )
+  def create(conn, params) do
+    case Collection.create_with_defaults(params) do
+      {:ok, collection} ->
+        conn
+        |> put_status(:created)
+        |> json(BaseResponse.generate(201, "201Created", collection))
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        errors =
+          Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+            Enum.reduce(opts, msg, fn {key, value}, acc ->
+              String.replace(acc, "%{#{key}}", to_string(value))
+            end)
+          end)
+
+        json(conn, BaseResponse.generate(400, "400BadRequest", errors))
     end
   end
 

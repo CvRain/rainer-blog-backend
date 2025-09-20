@@ -104,9 +104,11 @@ defmodule RainerBlogBackendWeb.Router do
   scope "/api/collection", RainerBlogBackendWeb do
     pipe_through [:api, :auth]
 
-    delete "/:id", CollectionController, :delete
+    delete "/one/:id", CollectionController, :delete
 
-    patch "/:id", CollectionController, :update
+    patch "/one/:id", CollectionController, :update
+
+    post "/one", CollectionController, :create
 
     get "/all", CollectionController, :show_all
   end

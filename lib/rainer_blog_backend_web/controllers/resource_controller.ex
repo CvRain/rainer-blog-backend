@@ -4,8 +4,6 @@ defmodule RainerBlogBackendWeb.ResourceController do
   alias RainerBlogBackend.{Resource, AwsService}
   alias RainerBlogBackendWeb.Types.BaseResponse
 
-  action_fallback RainerBlogBackendWeb.ErrorJSON
-
   def index(conn, _params) do
     resources = Resource.list_resources()
     json(conn, BaseResponse.generate(200, "200Ok", resources))
@@ -26,7 +24,7 @@ defmodule RainerBlogBackendWeb.ResourceController do
         inserted_at: resource.inserted_at,
         updated_at: resource.updated_at
       }
-      
+
       conn
       |> put_status(:created)
       |> json(BaseResponse.generate(201, "资源创建成功", data))
@@ -90,11 +88,12 @@ defmodule RainerBlogBackendWeb.ResourceController do
             json(conn, BaseResponse.generate(201, "资源上传成功", data))
 
           {:error, changeset} ->
-            errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-              Enum.reduce(opts, msg, fn {key, value}, acc ->
-                String.replace(acc, "%{#{key}}", to_string(value))
+            errors =
+              Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                Enum.reduce(opts, msg, fn {key, value}, acc ->
+                  String.replace(acc, "%{#{key}}", to_string(value))
+                end)
               end)
-            end)
 
             json(conn, BaseResponse.generate(400, "参数错误", errors))
         end
@@ -123,7 +122,7 @@ defmodule RainerBlogBackendWeb.ResourceController do
           inserted_at: resource.inserted_at,
           updated_at: resource.updated_at
         }
-        
+
         json(conn, BaseResponse.generate(200, "200Ok", data))
     end
   end
@@ -164,6 +163,7 @@ defmodule RainerBlogBackendWeb.ResourceController do
               url: url,
               file_type: resource.file_type
             }
+
             json(conn, BaseResponse.generate(200, "获取URL成功", data))
 
           {:error, reason} ->
@@ -187,6 +187,7 @@ defmodule RainerBlogBackendWeb.ResourceController do
               base64_content: base64_content,
               file_type: resource.file_type
             }
+
             json(conn, BaseResponse.generate(200, "获取Base64内容成功", data))
 
           {:error, reason} ->
@@ -215,7 +216,7 @@ defmodule RainerBlogBackendWeb.ResourceController do
             inserted_at: resource.inserted_at,
             updated_at: resource.updated_at
           }
-          
+
           json(conn, BaseResponse.generate(200, "资源更新成功", data))
         end
     end
@@ -239,6 +240,7 @@ defmodule RainerBlogBackendWeb.ResourceController do
   # 根据文件名获取文件类型
   defp get_file_type(filename) do
     ext = filename |> Path.extname() |> String.downcase()
+
     case ext do
       ".jpg" -> "image/jpeg"
       ".jpeg" -> "image/jpeg"
