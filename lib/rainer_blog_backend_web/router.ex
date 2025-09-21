@@ -98,15 +98,15 @@ defmodule RainerBlogBackendWeb.Router do
 
     get "/all/active", CollectionController, :show_all_active
 
-    get "/:id", CollectionController, :show
+    get "/one/:id", CollectionController, :show
   end
 
   scope "/api/collection", RainerBlogBackendWeb do
     pipe_through [:api, :auth]
 
-    delete "/one/:id", CollectionController, :delete
+    delete "/one", CollectionController, :delete
 
-    patch "/one/:id", CollectionController, :update
+    patch "/one", CollectionController, :update
 
     post "/one", CollectionController, :create
 

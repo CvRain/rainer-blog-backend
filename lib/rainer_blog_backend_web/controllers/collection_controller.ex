@@ -10,7 +10,7 @@ defmodule RainerBlogBackendWeb.CollectionController do
   end
 
   def create(conn, params) do
-    case Collection.create_with_defaults(params) do
+    case Collection.create(params) do
       {:ok, collection} ->
         conn
         |> put_status(:created)
@@ -54,8 +54,9 @@ defmodule RainerBlogBackendWeb.CollectionController do
     json(conn, BaseResponse.generate(200, "200Ok", collections))
   end
 
-  def update(conn, %{"id" => id}) do
+  def update(conn, _params) do
     body_params = conn.body_params
+    id = body_params["id"]
 
     case Collection.get_collection(id) do
       nil ->
@@ -68,12 +69,24 @@ defmodule RainerBlogBackendWeb.CollectionController do
         })
 
       collection ->
-        with {:ok, %Collection{} = updated_collection} <-
-               Collection.update_collection(collection, body_params) do
-          json(
-            conn,
-            BaseResponse.generate(200, "Collection updated successfully", updated_collection)
-          )
+        case Collection.update_collection(collection, body_params) do
+          {:ok, updated_collection} ->
+            json(
+              conn,
+              BaseResponse.generate(200, "Collection updated successfully", updated_collection)
+            )
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            errors =
+              Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                Enum.reduce(opts, msg, fn {key, value}, acc ->
+                  String.replace(acc, "%{#{key}}", to_string(value))
+                end)
+              end)
+
+            conn
+            |> put_status(:bad_request)
+            |> json(BaseResponse.generate(400, "400BadRequest", errors))
         end
     end
   end

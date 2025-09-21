@@ -1,12 +1,4 @@
 defmodule RainerBlogBackend.Article do
-  use Ecto.Schema
-
-  import Ecto.Changeset
-  import Ecto.Query
-
-  alias RainerBlogBackend.Repo
-  alias RainerBlogBackend.ArticleContentCache
-
   @doc """
     博客文章的结构
     - title: 文章标题
@@ -16,6 +8,15 @@ defmodule RainerBlogBackend.Article do
     - is_active: 是否激活，默认不激活
     - chapter_id: 所属章节
   """
+
+  use Ecto.Schema
+
+  import Ecto.Changeset
+  import Ecto.Query
+
+  alias RainerBlogBackend.Repo
+  alias RainerBlogBackend.ArticleContentCache
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   @derive {Jason.Encoder,
