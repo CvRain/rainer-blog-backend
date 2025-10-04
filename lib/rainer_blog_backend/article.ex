@@ -93,6 +93,23 @@ defmodule RainerBlogBackend.Article do
   end
 
   @doc """
+  获取一篇公开的文章（文章、章节、主题都必须是激活状态）
+  """
+  @spec get_public_article(String.t()) :: Ecto.Schema.t() | nil
+  def get_public_article(id) do
+    from(
+      a in __MODULE__,
+      join: c in "chapters",
+      on: a.chapter_id == c.id,
+      join: t in "themes",
+      on: c.theme_id == t.id,
+      where: a.id == ^id and a.is_active == true and c.is_active == true and t.is_active == true,
+      select: a
+    )
+    |> Repo.one()
+  end
+
+  @doc """
   创建一个新的Article
   """
   @spec create(map()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
@@ -109,5 +126,33 @@ defmodule RainerBlogBackend.Article do
     # 删除文章时同时删除缓存
     ArticleContentCache.delete_by_article_id(article.id)
     Repo.delete(article)
+  end
+
+  @doc """
+  获取公开的文章列表（文章、章节、主题都必须是激活状态），支持分页
+  """
+  @spec list_public_articles(integer(), integer()) :: [Ecto.Schema.t()]
+  def list_public_articles(page \\ 1, page_size \\ 10) do
+    query =
+      from(
+        a in __MODULE__,
+        join: c in "chapters",
+        on: a.chapter_id == c.id,
+        join: t in "themes",
+        on: c.theme_id == t.id,
+        where: a.is_active == true and c.is_active == true and t.is_active == true,
+        order_by: [desc: a.inserted_at],
+        select: a
+      )
+
+    query =
+      if page_size == -1 do
+        query
+      else
+        offset = (page - 1) * page_size
+        from q in query, offset: ^offset, limit: ^page_size
+      end
+
+    Repo.all(query)
   end
 end

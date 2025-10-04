@@ -13,19 +13,25 @@ defmodule RainerBlogBackendWeb.ThemeController do
     cond do
       is_nil(theme_name) or theme_name == "" ->
         json(conn, BaseResponse.generate(400, "400BadRequest", "缺少主题名称"))
+
       is_nil(theme_description) or theme_description == "" ->
         json(conn, BaseResponse.generate(400, "400BadRequest", "缺少主题描述"))
+
       true ->
         case Theme.create(theme_name, theme_description) do
           {:ok, theme} ->
             json(conn, BaseResponse.generate(201, "201Created", theme))
+
           {:error, %Ecto.Changeset{} = changeset} ->
-            errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-              Enum.reduce(opts, msg, fn {key, value}, acc ->
-                String.replace(acc, "%{#{key}}", to_string(value))
+            errors =
+              Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                Enum.reduce(opts, msg, fn {key, value}, acc ->
+                  String.replace(acc, "%{#{key}}", to_string(value))
+                end)
               end)
-            end)
+
             json(conn, BaseResponse.generate(400, "400BadRequest", errors))
+
           {:error, err} ->
             json(conn, BaseResponse.generate(400, "400BadRequest", err))
         end
@@ -39,7 +45,7 @@ defmodule RainerBlogBackendWeb.ThemeController do
 
   def active_themes(conn, _params) do
     themes =
-      Theme.get_all
+      Theme.get_all()
       |> Enum.filter(fn theme -> theme.is_active end)
 
     json(conn, BaseResponse.generate(200, "200OK", themes))
@@ -64,36 +70,46 @@ defmodule RainerBlogBackendWeb.ThemeController do
 
   def count(conn, _params) do
     count = Theme.count()
+
     response = %{
       count: count
     }
+
     json(conn, BaseResponse.generate(200, "200OK", response))
   end
 
   def count_this_week(conn, _params) do
     count = Theme.count_append_weekly()
+
     response = %{
       count: count
     }
+
     json(conn, BaseResponse.generate(200, "200OK", response))
   end
 
   def update(conn, _params) do
     request_body = conn.body_params
+
     case validate_theme_config(request_body) do
       {:ok, config} ->
         case Theme.update(config) do
           {:ok, theme} ->
             json(conn, BaseResponse.generate(200, "200OK", theme))
+
           {:error, %Ecto.Changeset{} = changeset} ->
-            errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-              Enum.reduce(opts, msg, fn {key, value}, acc ->
-                String.replace(acc, "%{#{key}}", to_string(value))
+            errors =
+              Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                Enum.reduce(opts, msg, fn {key, value}, acc ->
+                  String.replace(acc, "%{#{key}}", to_string(value))
+                end)
               end)
-            end)
+
             json(conn, BaseResponse.generate(400, "400BadRequest", errors))
+
           {:error, err} when is_binary(err) ->
             json(conn, BaseResponse.generate(400, "400BadRequest", err))
+
           {:error, _} ->
             json(conn, BaseResponse.generate(500, "500Internal Server Error", "更新失败"))
         end
@@ -125,15 +141,18 @@ defmodule RainerBlogBackendWeb.ThemeController do
   end
 
   defp parse_integer(value, _default) when is_integer(value), do: value
+
   defp parse_integer(value, default) when is_binary(value) do
     case Integer.parse(value) do
       {int, _} -> int
       :error -> default
     end
   end
+
   defp parse_integer(_, default), do: default
 
   defp parse_boolean(value, _default) when is_boolean(value), do: value
+
   defp parse_boolean(value, default) when is_binary(value) do
     case String.downcase(value) do
       "true" -> true
@@ -141,6 +160,7 @@ defmodule RainerBlogBackendWeb.ThemeController do
       _ -> default
     end
   end
+
   defp parse_boolean(_, default), do: default
 
   def all_themes_with_stats(conn, _params) do
@@ -154,19 +174,12 @@ defmodule RainerBlogBackendWeb.ThemeController do
   end
 
   def one_theme_with_details(conn, %{"id" => id}) do
-    theme = RainerBlogBackend.Theme.get_one(id)
-    if is_nil(theme) do
-      json(conn, BaseResponse.generate(404, "404NotFound", "主题不存在"))
-    else
-      chapters = RainerBlogBackend.Chapter.get_by_theme(theme.id, 1, 1000)
-      chapters_with_articles = Enum.map(chapters, fn chapter ->
-        articles = RainerBlogBackend.Article.get_by_chapter(chapter.id)
-        chapter_map = Map.from_struct(chapter) |> Map.drop([:__meta__, :__struct__])
-        Map.put(chapter_map, :articles, articles)
-      end)
-      theme_map = Map.from_struct(theme) |> Map.drop([:__meta__, :__struct__])
-      data = Map.put(theme_map, :chapters, chapters_with_articles)
-      json(conn, BaseResponse.generate(200, "200OK", data))
+    case Theme.get_active_details(id) do
+      nil ->
+        json(conn, BaseResponse.generate(404, "404NotFound", "主题不存在或未激活"))
+
+      theme_details ->
+        json(conn, BaseResponse.generate(200, "200OK", theme_details))
     end
   end
 
@@ -174,6 +187,7 @@ defmodule RainerBlogBackendWeb.ThemeController do
     case Theme.get_active_details(id) do
       nil ->
         json(conn, BaseResponse.generate(404, "未找到激活主题或主题未激活", nil))
+
       theme_map ->
         json(conn, BaseResponse.generate(200, "OK", theme_map))
     end
