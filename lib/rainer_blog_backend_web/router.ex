@@ -40,6 +40,45 @@ defmodule RainerBlogBackendWeb.Router do
     patch "/", UserController, :update
   end
 
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  pipeline :auth do
+    plug RainerBlogBackendWeb.AuthPlug
+  end
+
+  # 首页
+  scope "/", RainerBlogBackendWeb do
+    pipe_through :api
+    # 主页
+    get "/", OtherPageController, :main
+  end
+
+  # 系统总览
+  scope "/api", RainerBlogBackendWeb do
+    pipe_through :api
+    # 获取系统总览信息
+    get "/total/overview", OtherPageController, :storage_overview
+  end
+
+  # 用户相关接口
+  scope "/api/user", RainerBlogBackendWeb do
+    pipe_through :api
+    # 获取用户信息
+    get "/", UserController, :show
+    # 用户登录
+    post "/login", UserController, :login
+    # 校验token
+    get "/verify", UserController, :verify_token
+  end
+
+  scope "/api/user", RainerBlogBackendWeb do
+    pipe_through [:api, :auth]
+    # 更新用户信息
+    patch "/", UserController, :update
+  end
+
   # 文章相关接口
   scope "/api/article", RainerBlogBackendWeb do
     pipe_through :api
@@ -47,14 +86,8 @@ defmodule RainerBlogBackendWeb.Router do
     get "/count", ArticleController, :count
     # 获取本周新增文章数
     get "/count/this_week", ArticleController, :count_this_week
-    # 创建文章
-    post "/one", ArticleController, :create
     # 获取单篇文章详情
-    get "/one/:id", ArticleController, :show
-    # 删除文章
-    delete "/one/:id", ArticleController, :delete
-    # 更新文章
-    patch "/one", ArticleController, :update
+    get "/one/:id", ArticleController, :public_show
     # 获取公开文章列表（is_active=true）
     get "/public_list", ArticleController, :public_list
   end
@@ -63,6 +96,14 @@ defmodule RainerBlogBackendWeb.Router do
     pipe_through [:api, :auth]
     # 获取所有文章列表（需登录）
     get "/list", ArticleController, :list
+    # 创建文章
+    post "/one", ArticleController, :create
+    # 删除文章
+    delete "/one/:id", ArticleController, :delete
+    # 更新文章
+    patch "/one", ArticleController, :update
+    # 获取单篇文章详情（管理员）
+    get "/one/admin/:id", ArticleController, :private_show
   end
 
   # 章节相关接口

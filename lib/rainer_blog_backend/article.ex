@@ -110,6 +110,25 @@ defmodule RainerBlogBackend.Article do
   end
 
   @doc """
+  无条件获取一篇文章
+  """
+  @spec get_article(String.t()) :: Ecto.Schema.t() | nil
+  def get_article(id) do
+    Repo.get(__MODULE__, id)
+  end
+
+  @doc """
+  获取文章的入口，根据用户是否登录来返回不同范围的数据
+  """
+  def get_article(id, user) when is_map(user) do
+    get_article(id)
+  end
+
+  def get_article(id, _) do
+    get_public_article(id)
+  end
+
+  @doc """
   创建一个新的Article
   """
   @spec create(map()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}

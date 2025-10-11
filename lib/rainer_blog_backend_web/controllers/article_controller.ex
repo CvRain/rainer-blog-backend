@@ -97,25 +97,62 @@ defmodule RainerBlogBackendWeb.ArticleController do
     end
   end
 
-  def show(conn, %{"id" => id}) do
+  def public_show(conn, %{"id" => id}) do
     case Article.get_public_article(id) do
       nil ->
         json(conn, BaseResponse.generate(404, "404NotFound", "文章不存在或未激活"))
 
       article ->
-        # 尝试从缓存获取内容
-        cached_content = ArticleContentCache.get_by_article_id(article.id)
+        render_article_response(conn, article)
+    end
+  end
 
-        cond do
-          cached_content != nil ->
-            # 有缓存，直接返回缓存内容
+  def private_show(conn, %{"id" => id}) do
+    case Article.get_article(id) do
+      nil ->
+        json(conn, BaseResponse.generate(404, "404NotFound", "文章不存在"))
+
+      article ->
+        render_article_response(conn, article)
+    end
+  end
+
+  defp render_article_response(conn, article) do
+    # 尝试从缓存获取内容
+    cached_content = ArticleContentCache.get_by_article_id(article.id)
+
+    cond do
+      cached_content != nil ->
+        # 有缓存，直接返回缓存内容
+        data = %{
+          id: article.id,
+          title: article.title,
+          subtitle: article.subtitle,
+          aws_key: article.aws_key,
+          chapter_id: article.chapter_id,
+          s3_content: cached_content.content,
+          inserted_at: article.inserted_at,
+          updated_at: article.updated_at,
+          order: article.order,
+          is_active: article.is_active
+        }
+
+        json(conn, BaseResponse.generate(200, "200OK", data))
+
+      true ->
+        # 没有缓存，从S3下载内容
+        case AwsService.download_content(article.aws_key) do
+          {:ok, s3_content} ->
+            # 缓存内容
+            ArticleContentCache.upsert_content(article.id, s3_content)
+
             data = %{
               id: article.id,
               title: article.title,
               subtitle: article.subtitle,
               aws_key: article.aws_key,
               chapter_id: article.chapter_id,
-              s3_content: cached_content.content,
+              s3_content: s3_content,
               inserted_at: article.inserted_at,
               updated_at: article.updated_at,
               order: article.order,
@@ -124,38 +161,15 @@ defmodule RainerBlogBackendWeb.ArticleController do
 
             json(conn, BaseResponse.generate(200, "200OK", data))
 
-          true ->
-            # 没有缓存，从S3下载内容
-            case AwsService.download_content(article.aws_key) do
-              {:ok, s3_content} ->
-                # 缓存内容
-                ArticleContentCache.upsert_content(article.id, s3_content)
-
-                data = %{
-                  id: article.id,
-                  title: article.title,
-                  subtitle: article.subtitle,
-                  aws_key: article.aws_key,
-                  chapter_id: article.chapter_id,
-                  s3_content: s3_content,
-                  inserted_at: article.inserted_at,
-                  updated_at: article.updated_at,
-                  order: article.order,
-                  is_active: article.is_active
-                }
-
-                json(conn, BaseResponse.generate(200, "200OK", data))
-
-              {:error, reason} ->
-                json(
-                  conn,
-                  BaseResponse.generate(
-                    500,
-                    "500InternalServerError",
-                    "S3下载失败: #{inspect(reason)}"
-                  )
-                )
-            end
+          {:error, reason} ->
+            json(
+              conn,
+              BaseResponse.generate(
+                500,
+                "500InternalServerError",
+                "S3下载失败: #{inspect(reason)}"
+              )
+            )
         end
     end
   end

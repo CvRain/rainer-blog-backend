@@ -8,10 +8,15 @@ defmodule RainerBlogBackendWeb.AuthPlug do
     case get_token(conn) do
       {:ok, token} ->
         case verify_token(token) do
-          {:ok, _claims} -> conn
-          {:error, reason} -> unauthorized(conn, reason)
+          {:ok, claims} ->
+            assign(conn, :current_user, claims)
+
+          {:error, reason} ->
+            unauthorized(conn, reason)
         end
-      {:error, reason} -> unauthorized(conn, reason)
+
+      {:error, reason} ->
+        unauthorized(conn, reason)
     end
   end
 
@@ -24,6 +29,7 @@ defmodule RainerBlogBackendWeb.AuthPlug do
 
   defp verify_token(token) do
     signer = Joken.Signer.create("HS256", "your-secret-key")
+
     case Joken.verify(token, signer) do
       {:ok, claims} -> {:ok, claims}
       {:error, reason} -> {:error, reason}
