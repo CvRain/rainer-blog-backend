@@ -129,4 +129,17 @@ defmodule RainerBlogBackend.Chapter do
     |> changeset(attrs)
     |> Repo.update()
   end
+
+  # Cover helpers
+  def get_cover_url(chapter_id, expires_in \\ 3600) do
+    RainerBlogBackend.Cover.get_presigned_url_by_owner("chapter", chapter_id, expires_in)
+  end
+
+  def set_cover(chapter_id, resource_id) do
+    RainerBlogBackend.Cover.set_cover("chapter", chapter_id, resource_id)
+  end
+
+  def remove_cover(chapter_id) do
+    RainerBlogBackend.Cover.delete_by_owner("chapter", chapter_id)
+  end
 end

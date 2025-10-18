@@ -174,4 +174,17 @@ defmodule RainerBlogBackend.Article do
 
     Repo.all(query)
   end
+
+  # Cover helpers
+  def get_cover_url(article_id, expires_in \\ 3600) do
+    RainerBlogBackend.Cover.get_presigned_url_by_owner("article", article_id, expires_in)
+  end
+
+  def set_cover(article_id, resource_id) do
+    RainerBlogBackend.Cover.set_cover("article", article_id, resource_id)
+  end
+
+  def remove_cover(article_id) do
+    RainerBlogBackend.Cover.delete_by_owner("article", article_id)
+  end
 end

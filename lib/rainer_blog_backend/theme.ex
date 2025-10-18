@@ -199,4 +199,20 @@ defmodule RainerBlogBackend.Theme do
       nil
     end
   end
+
+  # Cover helpers
+  @doc "获取 theme 的封面 resource 的 presigned url"
+  def get_cover_url(theme_id, expires_in \\ 3600) do
+    RainerBlogBackend.Cover.get_presigned_url_by_owner("theme", theme_id, expires_in)
+  end
+
+  @doc "为 theme 设置封面（resource_id）"
+  def set_cover(theme_id, resource_id) do
+    RainerBlogBackend.Cover.set_cover("theme", theme_id, resource_id)
+  end
+
+  @doc "移除 theme 的封面"
+  def remove_cover(theme_id) do
+    RainerBlogBackend.Cover.delete_by_owner("theme", theme_id)
+  end
 end
