@@ -77,4 +77,128 @@ defmodule RainerBlogBackend.Cover do
         end
     end
   end
+
+  @doc "获取单个 owner 的封面信息（包含 resource 与 presigned url）"
+  def get_cover_info(owner_type, owner_id, expires_in \\ 3600) do
+    case get_by_owner(owner_type, owner_id) do
+      nil -> {:error, :not_found}
+
+      %__MODULE__{resource_id: resource_id} ->
+        case Resource.get_resource(resource_id) do
+          nil -> {:error, :resource_not_found}
+
+          resource ->
+            case AwsService.generate_presigned_url(resource.aws_key, expires_in) do
+              {:ok, url} ->
+                {:ok,
+                 %{
+                   owner_type: owner_type,
+                   owner_id: owner_id,
+                   resource: %{
+                     id: resource.id,
+                     name: resource.name,
+                     file_type: resource.file_type,
+                     file_size: resource.file_size,
+                     aws_key: resource.aws_key,
+                     url: url
+                   }
+                 }}
+
+              {:error, reason} -> {:error, reason}
+            end
+        end
+    end
+  end
+
+  @doc "分页获取所有 article 的封面信息（返回 items 和分页信息）"
+  def list_article_covers(page \\ 1, page_size \\ 10, expires_in \\ 3600) do
+    page = max(1, page)
+    page_size = page_size
+    offset = (page - 1) * page_size
+
+    base_query = from(c in __MODULE__, where: c.owner_type == "article")
+
+    total = Repo.aggregate(base_query, :count, :id)
+
+    query =
+      from(c in __MODULE__,
+        where: c.owner_type == "article",
+        join: r in Resource,
+        on: r.id == c.resource_id,
+        join: a in RainerBlogBackend.Article,
+        on: a.id == c.owner_id,
+        order_by: [desc: a.inserted_at],
+        offset: ^offset,
+        limit: ^page_size,
+        select: {c, r, a.id, a.title}
+      )
+
+    results = Repo.all(query)
+
+    items =
+      Enum.map(results, fn {cover, resource, article_id, article_title} ->
+        url =
+          case AwsService.generate_presigned_url(resource.aws_key, expires_in) do
+            {:ok, u} -> u
+            _ -> nil
+          end
+
+        %{
+          article_id: article_id,
+          article_title: article_title,
+          cover: %{
+            id: cover.id,
+            resource_id: resource.id,
+            name: resource.name,
+            file_type: resource.file_type,
+            file_size: resource.file_size,
+            url: url
+          }
+        }
+      end)
+
+    %{items: items, total: total, page: page, page_size: page_size}
+  end
+
+  @doc "为指定 theme 获取其下所有章节的封面信息（按章节返回，如果章节没有封面则返回 nil）"
+  def get_chapter_covers_by_theme(theme_id, expires_in \\ 3600) do
+    chapters =
+      RainerBlogBackend.Chapter
+      |> where([c], c.theme_id == ^theme_id)
+      |> order_by([c], asc: c.order)
+      |> Repo.all()
+
+    Enum.map(chapters, fn chapter ->
+      cover_info =
+        case get_cover_info("chapter", chapter.id, expires_in) do
+          {:ok, info} -> info
+          _ -> nil
+        end
+
+      %{
+        chapter_id: chapter.id,
+        chapter_name: chapter.name,
+        cover: cover_info
+      }
+    end)
+  end
+
+  @doc "为指定 chapter 获取其下所有文章的封面信息（按文章返回，如果文章没有封面则返回 nil）"
+  def get_article_covers_by_chapter(chapter_id, expires_in \\ 3600) do
+    articles = RainerBlogBackend.Article.get_by_chapter(chapter_id)
+
+    Enum.map(articles, fn article ->
+      cover_info =
+        case get_cover_info("article", article.id, expires_in) do
+          {:ok, info} -> info
+          _ -> nil
+        end
+
+      %{
+        article_id: article.id,
+        article_title: article.title,
+        cover: cover_info
+      }
+    end)
+  end
 end

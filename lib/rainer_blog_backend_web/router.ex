@@ -220,4 +220,33 @@ defmodule RainerBlogBackendWeb.Router do
     # 获取 S3 配置
     get "/config", S3Controller, :get_config
   end
+
+  # Cover 相关接口
+  scope "/api/cover", RainerBlogBackendWeb do
+    pipe_through :api
+    # 获取封面预签名 URL
+    get "/url", CoverController, :url
+    # 分页获取所有 article 的封面
+    get "/articles", CoverController, :articles
+    # 获取单个 article 的封面
+    get "/article/:id", CoverController, :article
+    # 获取 theme 的封面
+    get "/theme/:id", CoverController, :theme
+    # 获取 chapter 的封面
+    get "/chapter/:id", CoverController, :chapter
+    # 获取 theme 下的 chapters 的封面
+    get "/theme/:id/chapters", CoverController, :theme_chapters
+    # 获取 chapter 下的 articles 的封面
+    get "/chapter/:id/articles", CoverController, :chapter_articles
+  end
+
+  scope "/api/cover", RainerBlogBackendWeb do
+    pipe_through [:api, :auth]
+    # 通过已有 resource_id 设置封面
+    post "/set", CoverController, :set
+    # 上传文件并设置为封面（multipart/form-data）
+    post "/upload_set", CoverController, :upload_set
+    # 删除封面
+  delete "/", CoverController, :delete
+  end
 end
