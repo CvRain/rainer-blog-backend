@@ -35,9 +35,7 @@ defmodule RainerBlogBackend.User do
              :user_bio,
              :user_avatar,
              :user_background,
-             :user_website,
-             :user_github,
-             :user_twitter,
+             :links,
              :user_location,
              :is_active,
              :inserted_at,
@@ -50,11 +48,9 @@ defmodule RainerBlogBackend.User do
     field :user_nickname, :string
     field :user_signature, :string
     field :user_bio, :string
-    field :user_avatar, :string
-    field :user_background, :string
-    field :user_website, :string
-    field :user_github, :string
-    field :user_twitter, :string
+    field :user_avatar, :string  # 现在支持 base64
+    field :user_background, :string  # 现在支持 base64
+    field :links, {:array, :map}, default: []  # 存储链接列表 [{"title": "GitHub", "url": "..."}]
     field :user_location, :string
     field :is_active, :boolean, default: true
 
@@ -73,9 +69,7 @@ defmodule RainerBlogBackend.User do
       :user_bio,
       :user_avatar,
       :user_background,
-      :user_website,
-      :user_github,
-      :user_twitter,
+      :links,
       :user_location,
       :is_active
     ])
@@ -85,9 +79,7 @@ defmodule RainerBlogBackend.User do
     |> validate_length(:user_nickname, max: 50)
     |> validate_length(:user_signature, max: 200)
     |> validate_length(:user_bio, max: 2000)
-    |> validate_url(:user_website)
-    |> validate_url(:user_avatar)
-    |> validate_url(:user_background)
+    |> validate_links(:links)
     |> unique_constraint(:user_name)
     |> unique_constraint(:user_email)
   end
@@ -104,9 +96,7 @@ defmodule RainerBlogBackend.User do
       :user_bio,
       :user_avatar,
       :user_background,
-      :user_website,
-      :user_github,
-      :user_twitter,
+      :links,
       :user_location,
       :is_active
     ])
@@ -114,9 +104,7 @@ defmodule RainerBlogBackend.User do
     |> validate_length(:user_nickname, max: 50)
     |> validate_length(:user_signature, max: 200)
     |> validate_length(:user_bio, max: 2000)
-    |> validate_url(:user_website)
-    |> validate_url(:user_avatar)
-    |> validate_url(:user_background)
+    |> validate_links(:links)
     |> unique_constraint(:user_email)
   end
 
@@ -131,18 +119,52 @@ defmodule RainerBlogBackend.User do
     |> put_password_hash()
   end
 
-  defp validate_url(changeset, field) do
-    validate_change(changeset, field, fn _, value ->
-      if value == "" or value == nil do
+  defp validate_links(changeset, field) do
+    validate_change(changeset, field, fn _, links ->
+      if is_nil(links) or links == [] do
         []
       else
-        case URI.parse(value) do
-          %URI{scheme: scheme} when scheme in ["http", "https"] -> []
-          _ -> [{field, "URL格式不正确"}]
-        end
+        validate_links_list(links)
       end
     end)
   end
+
+  defp validate_links_list(links) when is_list(links) do
+    links
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {link, index} ->
+      cond do
+        not is_map(link) ->
+          [{:links, "链接 #{index + 1} 必须是对象格式"}]
+
+        not Map.has_key?(link, "title") and not Map.has_key?(link, :title) ->
+          [{:links, "链接 #{index + 1} 缺少 title 字段"}]
+
+        not Map.has_key?(link, "url") and not Map.has_key?(link, :url) ->
+          [{:links, "链接 #{index + 1} 缺少 url 字段"}]
+
+        true ->
+          title = link["title"] || link[:title]
+          url = link["url"] || link[:url]
+
+          errors = []
+
+          errors = if String.length(to_string(title)) > 50 do
+            [{:links, "链接 #{index + 1} 的标题不能超过50个字符"} | errors]
+          else
+            errors
+          end
+
+          errors = case URI.parse(to_string(url)) do
+            %URI{scheme: scheme} when scheme in ["http", "https"] -> errors
+            _ -> [{:links, "链接 #{index + 1} 的URL格式不正确"} | errors]
+          end
+
+          errors
+      end
+    end)
+  end
+  defp validate_links_list(_), do: [{:links, "links 必须是数组格式"}]
 
   defp put_password_hash(changeset) do
     case changeset do

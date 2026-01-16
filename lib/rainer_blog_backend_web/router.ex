@@ -40,45 +40,6 @@ defmodule RainerBlogBackendWeb.Router do
     patch "/", UserController, :update
   end
 
-  pipeline :api do
-    plug :accepts, ["json"]
-  end
-
-  pipeline :auth do
-    plug RainerBlogBackendWeb.AuthPlug
-  end
-
-  # 首页
-  scope "/", RainerBlogBackendWeb do
-    pipe_through :api
-    # 主页
-    get "/", OtherPageController, :main
-  end
-
-  # 系统总览
-  scope "/api", RainerBlogBackendWeb do
-    pipe_through :api
-    # 获取系统总览信息
-    get "/total/overview", OtherPageController, :storage_overview
-  end
-
-  # 用户相关接口
-  scope "/api/user", RainerBlogBackendWeb do
-    pipe_through :api
-    # 获取用户信息
-    get "/", UserController, :show
-    # 用户登录
-    post "/login", UserController, :login
-    # 校验token
-    get "/verify", UserController, :verify_token
-  end
-
-  scope "/api/user", RainerBlogBackendWeb do
-    pipe_through [:api, :auth]
-    # 更新用户信息
-    patch "/", UserController, :update
-  end
-
   # 文章相关接口
   scope "/api/article", RainerBlogBackendWeb do
     pipe_through :api
