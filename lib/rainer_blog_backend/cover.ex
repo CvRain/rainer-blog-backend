@@ -12,6 +12,7 @@ defmodule RainerBlogBackend.Cover do
 
   alias RainerBlogBackend.{Repo, Resource, AwsService}
 
+  @derive {Jason.Encoder, only: [:id, :owner_type, :owner_id, :resource_id, :inserted_at, :updated_at]}
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "covers" do
@@ -73,7 +74,10 @@ defmodule RainerBlogBackend.Cover do
           nil -> {:error, :resource_not_found}
 
           resource ->
-            AwsService.generate_presigned_url(resource.aws_key, expires_in)
+            case AwsService.generate_presigned_url(resource.aws_key, expires_in) do
+              {:ok, url} -> {:ok, url}
+              {:error, reason} -> {:error, reason}
+            end
         end
     end
   end

@@ -199,6 +199,8 @@ defmodule RainerBlogBackendWeb.Router do
     get "/theme/:id/chapters", CoverController, :theme_chapters
     # 获取 chapter 下的 articles 的封面
     get "/chapter/:id/articles", CoverController, :chapter_articles
+    # 获取所有可用的封面资源列表（从 covers collection）
+    get "/resources", CoverController, :resources
   end
 
   scope "/api/cover", RainerBlogBackendWeb do

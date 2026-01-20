@@ -25,8 +25,8 @@ defmodule RainerBlogBackend.Collection do
     |> validate_required([:name])
     |> unique_constraint(:name)
     |> validate_length(:name, min: 2, max: 100)
-    |> validate_length(:description, min: 2, max: 1000)
-    |> validate_length(:order, min: 0, max: 1000)
+    |> validate_length(:description, max: 1000)
+    |> validate_number(:order, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000)
   end
 
   @doc """
@@ -108,5 +108,32 @@ defmodule RainerBlogBackend.Collection do
         {:error, changeset} -> Repo.rollback(changeset)
       end
     end)
+  end
+
+  @doc """
+    获取或创建封面专用的 collection
+    如果不存在名为 "covers" 的 collection，则自动创建
+  """
+  def get_or_create_covers_collection() do
+    case Repo.get_by(__MODULE__, name: "covers") do
+      nil ->
+        # 不存在则创建
+        create(%{
+          name: "covers",
+          description: "封面图片集合 - 用于存储所有封面图片，支持复用",
+          order: 0,
+          is_active: true
+        })
+
+      collection ->
+        {:ok, collection}
+    end
+  end
+
+  @doc """
+    根据name查找collection
+  """
+  def get_by_name(name) do
+    Repo.get_by(__MODULE__, name: name)
   end
 end
