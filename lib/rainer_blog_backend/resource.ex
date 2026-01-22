@@ -91,7 +91,7 @@ defmodule RainerBlogBackend.Resource do
   """
   def find_by_content_hash(content) do
     # 计算文件内容的 MD5 hash
-    hash = :crypto.hash(:md5, content) |> Base.encode16(case: :lower)
+    _hash = :crypto.hash(:md5, content) |> Base.encode16(case: :lower)
 
     # 注意：这需要数据库中有 file_hash 字段
     # 目前我们先返回 nil，后续可以扩展

@@ -19,6 +19,8 @@ defmodule RainerBlogBackend.Application do
       RainerBlogBackend.UserConfig,
       # Start a task to initialize AWS config after UserConfig has started.
       {Task, fn -> AwsService.init_config() end},
+      # Cache refresher for article content
+      RainerBlogBackend.CacheRefresher,
       RainerBlogBackendWeb.Endpoint
     ]
 

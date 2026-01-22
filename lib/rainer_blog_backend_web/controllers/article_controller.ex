@@ -118,19 +118,16 @@ defmodule RainerBlogBackendWeb.ArticleController do
   end
 
   defp render_article_response(conn, article) do
-    # 尝试从缓存获取内容
-    cached_content = ArticleContentCache.get_by_article_id(article.id)
-
-    cond do
-      cached_content != nil ->
-        # 有缓存，直接返回缓存内容
+    # 使用新的缓存API，自动处理TTL和刷新逻辑
+    case ArticleContentCache.get_or_refresh(article.id, article.aws_key) do
+      {:ok, content} ->
         data = %{
           id: article.id,
           title: article.title,
           subtitle: article.subtitle,
           aws_key: article.aws_key,
           chapter_id: article.chapter_id,
-          s3_content: cached_content.content,
+          s3_content: content,
           inserted_at: article.inserted_at,
           updated_at: article.updated_at,
           order: article.order,
@@ -139,38 +136,15 @@ defmodule RainerBlogBackendWeb.ArticleController do
 
         json(conn, BaseResponse.generate(200, "200OK", data))
 
-      true ->
-        # 没有缓存，从S3下载内容
-        case AwsService.download_content(article.aws_key) do
-          {:ok, s3_content} ->
-            # 缓存内容
-            ArticleContentCache.upsert_content(article.id, s3_content)
-
-            data = %{
-              id: article.id,
-              title: article.title,
-              subtitle: article.subtitle,
-              aws_key: article.aws_key,
-              chapter_id: article.chapter_id,
-              s3_content: s3_content,
-              inserted_at: article.inserted_at,
-              updated_at: article.updated_at,
-              order: article.order,
-              is_active: article.is_active
-            }
-
-            json(conn, BaseResponse.generate(200, "200OK", data))
-
-          {:error, reason} ->
-            json(
-              conn,
-              BaseResponse.generate(
-                500,
-                "500InternalServerError",
-                "S3下载失败: #{inspect(reason)}"
-              )
-            )
-        end
+      {:error, reason} ->
+        json(
+          conn,
+          BaseResponse.generate(
+            500,
+            "500InternalServerError",
+            "S3下载失败: #{inspect(reason)}"
+          )
+        )
     end
   end
 

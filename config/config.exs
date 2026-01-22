@@ -9,7 +9,14 @@ import Config
 
 config :rainer_blog_backend,
   ecto_repos: [RainerBlogBackend.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  # Article content cache configuration
+  content_cache_ttl: 86_400,  # 1 day in seconds
+  content_stale_max: 604_800,  # 7 days in seconds (stale-while-revalidate window)
+  content_cache_refresh_enabled: true,
+  cache_refresher_interval: 300_000,  # 5 minutes in milliseconds
+  cache_refresher_batch: 20,  # Refresh 20 expired caches per run
+  cache_refresher_max_concurrent: 5  # Max 5 concurrent refresh tasks
 
 # Configures the endpoint
 config :rainer_blog_backend, RainerBlogBackendWeb.Endpoint,
