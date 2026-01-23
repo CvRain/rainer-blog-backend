@@ -210,6 +210,6 @@ defmodule RainerBlogBackendWeb.Router do
     # 上传文件并设置为封面（multipart/form-data）
     post "/upload_set", CoverController, :upload_set
     # 删除封面
-  delete "/", CoverController, :delete
+    delete "/", CoverController, :delete
   end
 end

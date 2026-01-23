@@ -6,7 +6,17 @@ defmodule RainerBlogBackend.Chapter do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  @derive {Jason.Encoder, only: [:id, :name, :description, :order, :is_active, :theme_id, :inserted_at, :updated_at]}
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :name,
+             :description,
+             :order,
+             :is_active,
+             :theme_id,
+             :inserted_at,
+             :updated_at
+           ]}
   schema "chapters" do
     field :name, :string
     field :description, :string
@@ -109,10 +119,13 @@ defmodule RainerBlogBackend.Chapter do
         if article.aws_key do
           AwsService.delete_content(article.aws_key)
         end
+
         Repo.delete!(article)
       end)
+
       # 删除章节
       chapter = Repo.get(__MODULE__, id)
+
       case chapter do
         nil -> Repo.rollback(:chapter_not_found)
         _ -> Repo.delete!(chapter)

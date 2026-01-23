@@ -11,7 +11,9 @@ defmodule RainerBlogBackend.Repo.Migrations.CreateResources do
       add :aws_key, :string, null: false
       add :order, :integer, default: 0
       add :is_active, :boolean, default: true
-      add :collection_id, references(:collections, type: :uuid, on_delete: :delete_all), null: false
+
+      add :collection_id, references(:collections, type: :uuid, on_delete: :delete_all),
+        null: false
 
       timestamps()
     end

@@ -16,9 +16,14 @@ defmodule RainerBlogBackend.CacheRefresher do
 
   alias RainerBlogBackend.{ArticleContentCache, Article, Repo}
 
-  @interval_ms Application.compile_env(:rainer_blog_backend, :cache_refresher_interval, 300_000)  # 默认5分钟
+  # 默认5分钟
+  @interval_ms Application.compile_env(:rainer_blog_backend, :cache_refresher_interval, 300_000)
   @batch_size Application.compile_env(:rainer_blog_backend, :cache_refresher_batch, 20)
-  @max_concurrent Application.compile_env(:rainer_blog_backend, :cache_refresher_max_concurrent, 5)
+  @max_concurrent Application.compile_env(
+                    :rainer_blog_backend,
+                    :cache_refresher_max_concurrent,
+                    5
+                  )
 
   defmodule State do
     defstruct [
@@ -53,17 +58,22 @@ defmodule RainerBlogBackend.CacheRefresher do
 
   @impl true
   def init(_opts) do
-    Logger.info("CacheRefresher starting with interval #{@interval_ms}ms, batch size #{@batch_size}")
+    Process.flag(:trap_exit, true)
+
+    Logger.info(
+      "CacheRefresher starting with interval #{@interval_ms}ms, batch size #{@batch_size}"
+    )
 
     # 启动后稍等片刻再开始第一次刷新
     Process.send_after(self(), :refresh, 10_000)
 
-    {:ok, %State{
-      refresh_count: 0,
-      error_count: 0,
-      last_run_at: nil,
-      running_tasks: MapSet.new()
-    }}
+    {:ok,
+     %State{
+       refresh_count: 0,
+       error_count: 0,
+       last_run_at: nil,
+       running_tasks: MapSet.new()
+     }}
   end
 
   @impl true
@@ -83,15 +93,18 @@ defmodule RainerBlogBackend.CacheRefresher do
     Process.demonitor(ref, [:flush])
     new_tasks = MapSet.delete(state.running_tasks, ref)
 
-    new_state = case result do
-      {:ok, _} ->
-        %{state | refresh_count: state.refresh_count + 1, running_tasks: new_tasks}
-      {:deleted, _} ->
-        %{state | refresh_count: state.refresh_count + 1, running_tasks: new_tasks}
-      {:error, reason} ->
-        Logger.warning("Cache refresh task failed: #{inspect(reason)}")
-        %{state | error_count: state.error_count + 1, running_tasks: new_tasks}
-    end
+    new_state =
+      case result do
+        {:ok, _} ->
+          %{state | refresh_count: state.refresh_count + 1, running_tasks: new_tasks}
+
+        {:deleted, _} ->
+          %{state | refresh_count: state.refresh_count + 1, running_tasks: new_tasks}
+
+        {:error, reason} ->
+          Logger.warning("Cache refresh task failed: #{inspect(reason)}")
+          %{state | error_count: state.error_count + 1, running_tasks: new_tasks}
+      end
 
     {:noreply, new_state}
   end
@@ -131,7 +144,10 @@ defmodule RainerBlogBackend.CacheRefresher do
 
     # 如果已经有太多任务在运行，跳过这次刷新
     if MapSet.size(state.running_tasks) >= @max_concurrent do
-      Logger.warning("Too many concurrent refresh tasks (#{MapSet.size(state.running_tasks)}), skipping this cycle")
+      Logger.warning(
+        "Too many concurrent refresh tasks (#{MapSet.size(state.running_tasks)}), skipping this cycle"
+      )
+
       state
     else
       expired_caches = ArticleContentCache.list_expired_caches(@batch_size)
@@ -139,44 +155,51 @@ defmodule RainerBlogBackend.CacheRefresher do
       Logger.info("Found #{length(expired_caches)} expired caches to refresh")
 
       # 为每个过期缓存启动异步刷新任务
-      new_tasks = Enum.reduce(expired_caches, state.running_tasks, fn cache, tasks ->
-        if MapSet.size(tasks) < @max_concurrent do
-          spawn_refresh_task(cache, tasks)
-        else
-          tasks
-        end
-      end)
+      new_tasks =
+        Enum.reduce(expired_caches, state.running_tasks, fn cache, tasks ->
+          if MapSet.size(tasks) < @max_concurrent do
+            spawn_refresh_task(cache, tasks)
+          else
+            tasks
+          end
+        end)
 
       %{state | last_run_at: now, running_tasks: new_tasks}
     end
   end
 
   defp spawn_refresh_task(cache, current_tasks) do
-    task = Task.async(fn ->
-      # 获取文章的 aws_key
-      case Repo.get(Article, cache.article_id) do
-        nil ->
-          Logger.warning("Article #{cache.article_id} not found, deleting cache")
-          ArticleContentCache.delete_by_article_id(cache.article_id)
-          {:deleted, cache.article_id}
+    task =
+      Task.async(fn ->
+        # 获取文章的 aws_key
+        case Repo.get(Article, cache.article_id) do
+          nil ->
+            Logger.warning("Article #{cache.article_id} not found, deleting cache")
+            ArticleContentCache.delete_by_article_id(cache.article_id)
+            {:deleted, cache.article_id}
 
-        article ->
-          Logger.debug("Refreshing cache for article #{article.id}")
+          article ->
+            Logger.debug("Refreshing cache for article #{article.id}")
 
-          case ArticleContentCache.get_or_refresh(article.id, article.aws_key) do
-            {:ok, _content} ->
-              Logger.debug("Successfully refreshed cache for article #{article.id}")
-              {:ok, article.id}
-            {:stale, _content} ->
-              # Stale 也算成功，因为内容已经可用
-              Logger.debug("Got stale content for article #{article.id}")
-              {:ok, article.id}
-            {:error, reason} = error ->
-              Logger.warning("Failed to refresh cache for article #{article.id}: #{inspect(reason)}")
-              error
-          end
-      end
-    end)
+            case ArticleContentCache.get_or_refresh(article.id, article.aws_key) do
+              {:ok, _content} ->
+                Logger.debug("Successfully refreshed cache for article #{article.id}")
+                {:ok, article.id}
+
+              {:stale, _content} ->
+                # Stale 也算成功，因为内容已经可用
+                Logger.debug("Got stale content for article #{article.id}")
+                {:ok, article.id}
+
+              {:error, reason} = error ->
+                Logger.warning(
+                  "Failed to refresh cache for article #{article.id}: #{inspect(reason)}"
+                )
+
+                error
+            end
+        end
+      end)
 
     MapSet.put(current_tasks, task.ref)
   end

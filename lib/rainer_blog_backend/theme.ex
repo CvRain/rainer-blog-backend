@@ -91,6 +91,7 @@ defmodule RainerBlogBackend.Theme do
     case get_one(attrs.id) do
       nil ->
         {:error, "主题不存在"}
+
       theme ->
         theme
         |> changeset(attrs)
@@ -156,14 +157,16 @@ defmodule RainerBlogBackend.Theme do
 
     Enum.map(themes, fn theme ->
       # 获取该主题下的所有章节
-      chapters = Chapter.get_by_theme(theme.id, 1, 1000) # 获取所有章节，不分页
+      # 获取所有章节，不分页
+      chapters = Chapter.get_by_theme(theme.id, 1, 1000)
 
       # 为每个章节获取文章
-      chapters_with_articles = Enum.map(chapters, fn chapter ->
-        articles = Article.get_by_chapter(chapter.id)
-        chapter_map = Map.from_struct(chapter) |> Map.drop([:__meta__, :__struct__])
-        Map.put(chapter_map, :articles, articles)
-      end)
+      chapters_with_articles =
+        Enum.map(chapters, fn chapter ->
+          articles = Article.get_by_chapter(chapter.id)
+          chapter_map = Map.from_struct(chapter) |> Map.drop([:__meta__, :__struct__])
+          Map.put(chapter_map, :articles, articles)
+        end)
 
       theme_map = Map.from_struct(theme) |> Map.drop([:__meta__, :__struct__])
       Map.put(theme_map, :chapters, chapters_with_articles)
@@ -178,20 +181,23 @@ defmodule RainerBlogBackend.Theme do
     alias RainerBlogBackend.{Chapter, Article, Repo}
 
     # 获取激活的章节
-    chapters = Chapter
+    chapters =
+      Chapter
       |> where([c], c.theme_id == ^theme_id and c.is_active == true)
       |> order_by([c], asc: c.order)
       |> Repo.all()
 
     # 为每个章节获取激活的文章
-    chapters_with_articles = Enum.map(chapters, fn chapter ->
-      articles = Article.get_active_by_chapter(chapter.id)
-      chapter_map = Map.from_struct(chapter) |> Map.drop([:__meta__, :__struct__])
-      Map.put(chapter_map, :articles, articles)
-    end)
+    chapters_with_articles =
+      Enum.map(chapters, fn chapter ->
+        articles = Article.get_active_by_chapter(chapter.id)
+        chapter_map = Map.from_struct(chapter) |> Map.drop([:__meta__, :__struct__])
+        Map.put(chapter_map, :articles, articles)
+      end)
 
     # 获取主题本身
     theme = Repo.get(__MODULE__, theme_id)
+
     if theme && theme.is_active do
       theme_map = Map.from_struct(theme) |> Map.drop([:__meta__, :__struct__])
       Map.put(theme_map, :chapters, chapters_with_articles)

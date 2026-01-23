@@ -12,7 +12,8 @@ defmodule RainerBlogBackend.Cover do
 
   alias RainerBlogBackend.{Repo, Resource, AwsService}
 
-  @derive {Jason.Encoder, only: [:id, :owner_type, :owner_id, :resource_id, :inserted_at, :updated_at]}
+  @derive {Jason.Encoder,
+           only: [:id, :owner_type, :owner_id, :resource_id, :inserted_at, :updated_at]}
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "covers" do
@@ -67,11 +68,13 @@ defmodule RainerBlogBackend.Cover do
   @doc "返回 owner 对应封面资源的 presigned url（如果存在）"
   def get_presigned_url_by_owner(owner_type, owner_id, expires_in \\ 3600) do
     case get_by_owner(owner_type, owner_id) do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
 
       %__MODULE__{resource_id: resource_id} ->
         case Resource.get_resource(resource_id) do
-          nil -> {:error, :resource_not_found}
+          nil ->
+            {:error, :resource_not_found}
 
           resource ->
             case AwsService.generate_presigned_url(resource.aws_key, expires_in) do
@@ -85,11 +88,13 @@ defmodule RainerBlogBackend.Cover do
   @doc "获取单个 owner 的封面信息（包含 resource 与 presigned url）"
   def get_cover_info(owner_type, owner_id, expires_in \\ 3600) do
     case get_by_owner(owner_type, owner_id) do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
 
       %__MODULE__{resource_id: resource_id} ->
         case Resource.get_resource(resource_id) do
-          nil -> {:error, :resource_not_found}
+          nil ->
+            {:error, :resource_not_found}
 
           resource ->
             case AwsService.generate_presigned_url(resource.aws_key, expires_in) do
@@ -108,7 +113,8 @@ defmodule RainerBlogBackend.Cover do
                    }
                  }}
 
-              {:error, reason} -> {:error, reason}
+              {:error, reason} ->
+                {:error, reason}
             end
         end
     end

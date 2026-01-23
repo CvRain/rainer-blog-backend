@@ -5,21 +5,25 @@ defmodule RainerBlogBackendWeb.S3Controller do
   # 内网 IP 校验
   defp internal_ip?(conn) do
     ip = Tuple.to_list(conn.remote_ip) |> Enum.join(".")
+
     String.starts_with?(ip, ["10.", "192.168.", "127."]) or
       (String.starts_with?(ip, "172.") and
-        (case String.split(ip, ".") do
-          [_, second, _, _] ->
-            case Integer.parse(second) do
-              {n, _} when n >= 16 and n <= 31 -> true
-              _ -> false
-            end
-          _ -> false
-        end))
+         case String.split(ip, ".") do
+           [_, second, _, _] ->
+             case Integer.parse(second) do
+               {n, _} when n >= 16 and n <= 31 -> true
+               _ -> false
+             end
+
+           _ ->
+             false
+         end)
   end
 
   def update_config(conn, params) do
     if internal_ip?(conn) do
       required = ["access_key_id", "secret_access_key", "region", "bucket", "endpoint"]
+
       if Enum.all?(required, &Map.has_key?(params, &1)) do
         config = %{
           access_key_id: params["access_key_id"],
@@ -28,6 +32,7 @@ defmodule RainerBlogBackendWeb.S3Controller do
           bucket: params["bucket"],
           endpoint: params["endpoint"]
         }
+
         :ok = UserConfig.update_aws_config(config)
         json(conn, %{code: 0, msg: "ok", data: config})
       else

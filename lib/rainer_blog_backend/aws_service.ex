@@ -20,14 +20,18 @@ defmodule RainerBlogBackend.AwsService do
         Application.put_env(:ex_aws, :access_key_id, access_key_id)
         Application.put_env(:ex_aws, :secret_access_key, secret_access_key)
         Application.put_env(:ex_aws, :region, region)
-        Application.put_env(:ex_aws, :s3, [
+
+        Application.put_env(:ex_aws, :s3,
           scheme: "https://",
           host: endpoint,
           region: region
-        ])
+        )
+
         Logger.info("AWS/OBS configuration loaded successfully.")
       else
-        Logger.warning("AWS/OBS configuration is missing from UserConfig. S3 operations will fail.")
+        Logger.warning(
+          "AWS/OBS configuration is missing from UserConfig. S3 operations will fail."
+        )
       end
     else
       _ -> Logger.error("Failed to get AWS/OBS configuration from UserConfig.")
@@ -62,11 +66,13 @@ defmodule RainerBlogBackend.AwsService do
   """
   def upload_content(content, s3_path) do
     bucket = UserConfig.get_aws_config()[:bucket]
+
     if bucket == "" do
       Logger.error("S3 bucket is not configured.")
       {:error, :bucket_not_configured}
     else
       Logger.info("Uploading content to S3 bucket '#{bucket}' at #{s3_path}...")
+
       case ExAws.S3.put_object(bucket, s3_path, content) |> ExAws.request() do
         {:ok, _resp} -> {:ok, s3_path}
         {:error, reason} -> {:error, reason}
@@ -79,11 +85,13 @@ defmodule RainerBlogBackend.AwsService do
   """
   def download_content(s3_path) do
     bucket = UserConfig.get_aws_config()[:bucket]
+
     if bucket == "" do
       Logger.error("S3 bucket is not configured.")
       {:error, :bucket_not_configured}
     else
       Logger.info("Downloading content from S3 bucket '#{bucket}' at #{s3_path}...")
+
       case ExAws.S3.get_object(bucket, s3_path) |> ExAws.request() do
         {:ok, %{body: body}} -> {:ok, body}
         {:error, reason} -> {:error, reason}
@@ -96,11 +104,13 @@ defmodule RainerBlogBackend.AwsService do
   """
   def delete_content(s3_path) do
     bucket = UserConfig.get_aws_config()[:bucket]
+
     if bucket == "" do
       Logger.error("S3 bucket is not configured.")
       {:error, :bucket_not_configured}
     else
       Logger.info("Deleting content from S3 bucket '#{bucket}' at #{s3_path}...")
+
       case ExAws.S3.delete_object(bucket, s3_path) |> ExAws.request() do
         {:ok, _} -> :ok
         {:error, reason} -> {:error, reason}
@@ -115,19 +125,22 @@ defmodule RainerBlogBackend.AwsService do
   """
   def generate_presigned_url(s3_path, expires_in \\ 3600) do
     bucket = UserConfig.get_aws_config()[:bucket]
+
     if bucket == "" do
       Logger.error("S3 bucket is not configured.")
       {:error, :bucket_not_configured}
     else
       try do
         # 生成预签名URL
-        url = ExAws.S3.presigned_url(
-          ExAws.Config.new(:s3),
-          :get,
-          bucket,
-          s3_path,
-          expires_in: expires_in
-        )
+        url =
+          ExAws.S3.presigned_url(
+            ExAws.Config.new(:s3),
+            :get,
+            bucket,
+            s3_path,
+            expires_in: expires_in
+          )
+
         {:ok, url}
       rescue
         e ->
@@ -146,6 +159,7 @@ defmodule RainerBlogBackend.AwsService do
       {:ok, content} ->
         base64_content = Base.encode64(content)
         {:ok, base64_content}
+
       {:error, reason} ->
         {:error, reason}
     end

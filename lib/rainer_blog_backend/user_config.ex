@@ -6,7 +6,8 @@ defmodule RainerBlogBackend.UserConfig do
   use GenServer
   require Logger
 
-  @db_path "priv/cubdb/user_config"  # 保持使用原路径，AWS配置存储在这里
+  # 保持使用原路径，AWS配置存储在这里
+  @db_path "priv/cubdb/user_config"
   @aws_config_key "aws_config"
 
   def start_link(_opts) do

@@ -5,7 +5,20 @@ defmodule RainerBlogBackend.Resource do
 
   alias RainerBlogBackend.Repo
 
-  @derive {Jason.Encoder, only: [:id, :name, :description, :file_type, :file_size, :aws_key, :order, :is_active, :collection_id, :inserted_at, :updated_at]}
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :name,
+             :description,
+             :file_type,
+             :file_size,
+             :aws_key,
+             :order,
+             :is_active,
+             :collection_id,
+             :inserted_at,
+             :updated_at
+           ]}
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "resources" do
@@ -24,13 +37,30 @@ defmodule RainerBlogBackend.Resource do
   @doc false
   def changeset(resource, attrs) do
     resource
-    |> cast(attrs, [:name, :description, :file_type, :file_size, :aws_key, :order, :is_active, :collection_id])
-    |> validate_required([:name, :description, :file_type, :file_size, :aws_key, :order, :is_active])
+    |> cast(attrs, [
+      :name,
+      :description,
+      :file_type,
+      :file_size,
+      :aws_key,
+      :order,
+      :is_active,
+      :collection_id
+    ])
+    |> validate_required([
+      :name,
+      :description,
+      :file_type,
+      :file_size,
+      :aws_key,
+      :order,
+      :is_active
+    ])
     |> unique_constraint([:name, :collection_id], name: :resources_name_collection_id_index)
     |> unique_constraint(:aws_key)
   end
 
-   @doc """
+  @doc """
     获取存在的resource个数
   """
   @spec count() :: integer()
@@ -106,11 +136,12 @@ defmodule RainerBlogBackend.Resource do
     page_size = Keyword.get(opts, :page_size, 20)
     offset = (page - 1) * page_size
 
-    query = from r in __MODULE__,
-      where: r.collection_id == ^collection_id,
-      order_by: [desc: r.inserted_at],
-      limit: ^page_size,
-      offset: ^offset
+    query =
+      from r in __MODULE__,
+        where: r.collection_id == ^collection_id,
+        order_by: [desc: r.inserted_at],
+        limit: ^page_size,
+        offset: ^offset
 
     Repo.all(query)
   end

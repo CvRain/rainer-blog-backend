@@ -14,11 +14,14 @@ defmodule RainerBlogBackendWeb.ChapterController do
       {:error, changeset} ->
         IO.puts("create chapter error")
         IO.puts(changeset)
-        errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-          Enum.reduce(opts, msg, fn {key, value}, acc ->
-            String.replace(acc, "%{#{key}}", to_string(value))
+
+        errors =
+          Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+            Enum.reduce(opts, msg, fn {key, value}, acc ->
+              String.replace(acc, "%{#{key}}", to_string(value))
+            end)
           end)
-        end)
+
         json(conn, BaseResponse.generate(400, "400BadRequest", errors))
     end
   end
@@ -96,14 +99,15 @@ defmodule RainerBlogBackendWeb.ChapterController do
           json(conn, BaseResponse.generate(200, "200OK", chapter))
 
         {:error, changeset} ->
-          errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-            Enum.reduce(opts, msg, fn {key, value}, acc ->
-              String.replace(acc, "%{#{key}}", to_string(value))
+          errors =
+            Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+              Enum.reduce(opts, msg, fn {key, value}, acc ->
+                String.replace(acc, "%{#{key}}", to_string(value))
+              end)
             end)
-          end)
+
           json(conn, BaseResponse.generate(422, "422UnprocessableEntity", errors))
       end
     end
   end
-
 end

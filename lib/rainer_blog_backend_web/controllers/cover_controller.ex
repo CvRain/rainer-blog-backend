@@ -6,17 +6,27 @@ defmodule RainerBlogBackendWeb.CoverController do
 
   # POST /api/cover/set
   # body: {"owner_type": "theme|chapter|article", "owner_id": "uuid", "resource_id": "uuid"}
-  def set(conn, %{"owner_type" => owner_type, "owner_id" => owner_id, "resource_id" => resource_id}) do
+  def set(conn, %{
+        "owner_type" => owner_type,
+        "owner_id" => owner_id,
+        "resource_id" => resource_id
+      }) do
     case Resource.get_resource(resource_id) do
-      nil -> json(conn, BaseResponse.generate(404, "resource not found", nil))
+      nil ->
+        json(conn, BaseResponse.generate(404, "resource not found", nil))
 
       _resource ->
         case Cover.set_cover(owner_type, owner_id, resource_id) do
-          {:ok, cover} -> json(conn, BaseResponse.generate(200, "set cover ok", cover))
+          {:ok, cover} ->
+            json(conn, BaseResponse.generate(200, "set cover ok", cover))
+
           {:error, changeset} ->
-            errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-              Enum.reduce(opts, msg, fn {k, v}, acc -> String.replace(acc, "%{#{k}}", to_string(v)) end)
-            end)
+            errors =
+              Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                Enum.reduce(opts, msg, fn {k, v}, acc ->
+                  String.replace(acc, "%{#{k}}", to_string(v))
+                end)
+              end)
 
             json(conn, BaseResponse.generate(400, "invalid params", errors))
         end
@@ -29,13 +39,17 @@ defmodule RainerBlogBackendWeb.CoverController do
       {:ok, {:ok, url}} ->
         # 处理嵌套的 {:ok, {:ok, url}} 结构
         json(conn, BaseResponse.generate(200, "ok", %{url: url}))
+
       {:ok, url} when is_binary(url) ->
         # 如果已经是字符串，直接使用
         json(conn, BaseResponse.generate(200, "ok", %{url: url}))
+
       {:error, :not_found} ->
         json(conn, BaseResponse.generate(404, "cover not found", nil))
+
       {:error, :resource_not_found} ->
         json(conn, BaseResponse.generate(404, "resource not found", nil))
+
       {:error, reason} ->
         json(conn, BaseResponse.generate(500, "failed", %{error: inspect(reason)}))
     end
@@ -44,8 +58,11 @@ defmodule RainerBlogBackendWeb.CoverController do
   # DELETE /api/cover?owner_type=theme&owner_id=...
   def delete(conn, %{"owner_type" => owner_type, "owner_id" => owner_id}) do
     case Cover.delete_by_owner(owner_type, owner_id) do
-      {:ok, _} -> json(conn, BaseResponse.generate(200, "deleted", nil))
-      {:error, reason} -> json(conn, BaseResponse.generate(500, "failed", %{error: inspect(reason)}))
+      {:ok, _} ->
+        json(conn, BaseResponse.generate(200, "deleted", nil))
+
+      {:error, reason} ->
+        json(conn, BaseResponse.generate(500, "failed", %{error: inspect(reason)}))
     end
   end
 
@@ -61,30 +78,51 @@ defmodule RainerBlogBackendWeb.CoverController do
   # GET /api/cover/article/:id
   def article(conn, %{"id" => id}) do
     case Cover.get_cover_info("article", id) do
-      {:ok, info} -> json(conn, BaseResponse.generate(200, "ok", info))
-      {:error, :not_found} -> json(conn, BaseResponse.generate(404, "cover not found", nil))
-      {:error, :resource_not_found} -> json(conn, BaseResponse.generate(404, "resource not found", nil))
-      {:error, reason} -> json(conn, BaseResponse.generate(500, "failed", %{error: inspect(reason)}))
+      {:ok, info} ->
+        json(conn, BaseResponse.generate(200, "ok", info))
+
+      {:error, :not_found} ->
+        json(conn, BaseResponse.generate(404, "cover not found", nil))
+
+      {:error, :resource_not_found} ->
+        json(conn, BaseResponse.generate(404, "resource not found", nil))
+
+      {:error, reason} ->
+        json(conn, BaseResponse.generate(500, "failed", %{error: inspect(reason)}))
     end
   end
 
   # GET /api/cover/theme/:id
   def theme(conn, %{"id" => id}) do
     case Cover.get_cover_info("theme", id) do
-      {:ok, info} -> json(conn, BaseResponse.generate(200, "ok", info))
-      {:error, :not_found} -> json(conn, BaseResponse.generate(404, "cover not found", nil))
-      {:error, :resource_not_found} -> json(conn, BaseResponse.generate(404, "resource not found", nil))
-      {:error, reason} -> json(conn, BaseResponse.generate(500, "failed", %{error: inspect(reason)}))
+      {:ok, info} ->
+        json(conn, BaseResponse.generate(200, "ok", info))
+
+      {:error, :not_found} ->
+        json(conn, BaseResponse.generate(404, "cover not found", nil))
+
+      {:error, :resource_not_found} ->
+        json(conn, BaseResponse.generate(404, "resource not found", nil))
+
+      {:error, reason} ->
+        json(conn, BaseResponse.generate(500, "failed", %{error: inspect(reason)}))
     end
   end
 
   # GET /api/cover/chapter/:id
   def chapter(conn, %{"id" => id}) do
     case Cover.get_cover_info("chapter", id) do
-      {:ok, info} -> json(conn, BaseResponse.generate(200, "ok", info))
-      {:error, :not_found} -> json(conn, BaseResponse.generate(404, "cover not found", nil))
-      {:error, :resource_not_found} -> json(conn, BaseResponse.generate(404, "resource not found", nil))
-      {:error, reason} -> json(conn, BaseResponse.generate(500, "failed", %{error: inspect(reason)}))
+      {:ok, info} ->
+        json(conn, BaseResponse.generate(200, "ok", info))
+
+      {:error, :not_found} ->
+        json(conn, BaseResponse.generate(404, "cover not found", nil))
+
+      {:error, :resource_not_found} ->
+        json(conn, BaseResponse.generate(404, "resource not found", nil))
+
+      {:error, reason} ->
+        json(conn, BaseResponse.generate(500, "failed", %{error: inspect(reason)}))
     end
   end
 
@@ -112,40 +150,73 @@ defmodule RainerBlogBackendWeb.CoverController do
 
     case Collection.get_by_name("covers") do
       nil ->
-        json(conn, BaseResponse.generate(200, "ok", %{resources: [], total: 0, page: page, page_size: page_size}))
+        json(
+          conn,
+          BaseResponse.generate(200, "ok", %{
+            resources: [],
+            total: 0,
+            page: page,
+            page_size: page_size
+          })
+        )
 
       collection ->
         resources = Resource.list_by_collection(collection.id, page: page, page_size: page_size)
         total = Resource.count_by_collection(collection.id)
 
         # 为每个资源生成预签名 URL
-        resources_with_urls = Enum.map(resources, fn resource ->
-          case AwsService.generate_presigned_url(resource.aws_key, 3600) do
-            {:ok, url} ->
-              Map.from_struct(resource)
-              |> Map.put(:url, url)
-              |> Map.take([:id, :name, :description, :file_type, :file_size, :aws_key, :url, :inserted_at])
+        resources_with_urls =
+          Enum.map(resources, fn resource ->
+            case AwsService.generate_presigned_url(resource.aws_key, 3600) do
+              {:ok, url} ->
+                Map.from_struct(resource)
+                |> Map.put(:url, url)
+                |> Map.take([
+                  :id,
+                  :name,
+                  :description,
+                  :file_type,
+                  :file_size,
+                  :aws_key,
+                  :url,
+                  :inserted_at
+                ])
 
-            {:error, _} ->
-              Map.from_struct(resource)
-              |> Map.put(:url, nil)
-              |> Map.take([:id, :name, :description, :file_type, :file_size, :aws_key, :url, :inserted_at])
-          end
-        end)
+              {:error, _} ->
+                Map.from_struct(resource)
+                |> Map.put(:url, nil)
+                |> Map.take([
+                  :id,
+                  :name,
+                  :description,
+                  :file_type,
+                  :file_size,
+                  :aws_key,
+                  :url,
+                  :inserted_at
+                ])
+            end
+          end)
 
-        json(conn, BaseResponse.generate(200, "ok", %{
-          resources: resources_with_urls,
-          total: total,
-          page: page,
-          page_size: page_size,
-          total_pages: ceil(total / page_size)
-        }))
+        json(
+          conn,
+          BaseResponse.generate(200, "ok", %{
+            resources: resources_with_urls,
+            total: total,
+            page: page,
+            page_size: page_size,
+            total_pages: ceil(total / page_size)
+          })
+        )
     end
   end
 
   # POST /api/cover/upload_set
   # multipart form-data: file + owner_type + owner_id
-  def upload_set(conn, %{"file" => file_param, "owner_type" => owner_type, "owner_id" => owner_id} = params) do
+  def upload_set(
+        conn,
+        %{"file" => file_param, "owner_type" => owner_type, "owner_id" => owner_id} = params
+      ) do
     filename = file_param.filename
     content = file_param.path |> File.read!()
     file_size = byte_size(content)
@@ -178,27 +249,40 @@ defmodule RainerBlogBackendWeb.CoverController do
               aws_key: aws_key,
               order: params["order"] || 0,
               is_active: params["is_active"] || true,
-              collection_id: covers_collection.id  # 自动关联到 covers collection
+              # 自动关联到 covers collection
+              collection_id: covers_collection.id
             }
 
             case Resource.create_resource(attrs) do
               {:ok, resource} ->
                 case Cover.set_cover(owner_type, owner_id, resource.id) do
                   {:ok, cover} ->
-                    json(conn, BaseResponse.generate(201, "cover set successfully", %{cover: cover, resource: resource}))
+                    json(
+                      conn,
+                      BaseResponse.generate(201, "cover set successfully", %{
+                        cover: cover,
+                        resource: resource
+                      })
+                    )
 
                   {:error, changeset} ->
-                    errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-                      Enum.reduce(opts, msg, fn {k, v}, acc -> String.replace(acc, "%{#{k}}", to_string(v)) end)
-                    end)
+                    errors =
+                      Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                        Enum.reduce(opts, msg, fn {k, v}, acc ->
+                          String.replace(acc, "%{#{k}}", to_string(v))
+                        end)
+                      end)
 
                     json(conn, BaseResponse.generate(400, "failed to set cover", errors))
                 end
 
               {:error, changeset} ->
-                errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-                  Enum.reduce(opts, msg, fn {k, v}, acc -> String.replace(acc, "%{#{k}}", to_string(v)) end)
-                end)
+                errors =
+                  Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                    Enum.reduce(opts, msg, fn {k, v}, acc ->
+                      String.replace(acc, "%{#{k}}", to_string(v))
+                    end)
+                  end)
 
                 json(conn, BaseResponse.generate(400, "invalid resource params", errors))
             end
@@ -211,12 +295,21 @@ defmodule RainerBlogBackendWeb.CoverController do
         # 已存在相同的资源，直接复用
         case Cover.set_cover(owner_type, owner_id, existing_resource.id) do
           {:ok, cover} ->
-            json(conn, BaseResponse.generate(200, "cover set successfully (reused existing resource)", %{cover: cover, resource: existing_resource}))
+            json(
+              conn,
+              BaseResponse.generate(200, "cover set successfully (reused existing resource)", %{
+                cover: cover,
+                resource: existing_resource
+              })
+            )
 
           {:error, changeset} ->
-            errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-              Enum.reduce(opts, msg, fn {k, v}, acc -> String.replace(acc, "%{#{k}}", to_string(v)) end)
-            end)
+            errors =
+              Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                Enum.reduce(opts, msg, fn {k, v}, acc ->
+                  String.replace(acc, "%{#{k}}", to_string(v))
+                end)
+              end)
 
             json(conn, BaseResponse.generate(400, "failed to set cover", errors))
         end

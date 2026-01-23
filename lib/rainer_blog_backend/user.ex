@@ -48,9 +48,12 @@ defmodule RainerBlogBackend.User do
     field :user_nickname, :string
     field :user_signature, :string
     field :user_bio, :string
-    field :user_avatar, :string  # 现在支持 base64
-    field :user_background, :string  # 现在支持 base64
-    field :links, {:array, :map}, default: []  # 存储链接列表 [{"title": "GitHub", "url": "..."}]
+    # 现在支持 base64
+    field :user_avatar, :string
+    # 现在支持 base64
+    field :user_background, :string
+    # 存储链接列表 [{"title": "GitHub", "url": "..."}]
+    field :links, {:array, :map}, default: []
     field :user_location, :string
     field :is_active, :boolean, default: true
 
@@ -149,21 +152,24 @@ defmodule RainerBlogBackend.User do
 
           errors = []
 
-          errors = if String.length(to_string(title)) > 50 do
-            [{:links, "链接 #{index + 1} 的标题不能超过50个字符"} | errors]
-          else
-            errors
-          end
+          errors =
+            if String.length(to_string(title)) > 50 do
+              [{:links, "链接 #{index + 1} 的标题不能超过50个字符"} | errors]
+            else
+              errors
+            end
 
-          errors = case URI.parse(to_string(url)) do
-            %URI{scheme: scheme} when scheme in ["http", "https"] -> errors
-            _ -> [{:links, "链接 #{index + 1} 的URL格式不正确"} | errors]
-          end
+          errors =
+            case URI.parse(to_string(url)) do
+              %URI{scheme: scheme} when scheme in ["http", "https"] -> errors
+              _ -> [{:links, "链接 #{index + 1} 的URL格式不正确"} | errors]
+            end
 
           errors
       end
     end)
   end
+
   defp validate_links_list(_), do: [{:links, "links 必须是数组格式"}]
 
   defp put_password_hash(changeset) do
