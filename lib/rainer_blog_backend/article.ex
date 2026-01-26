@@ -39,6 +39,8 @@ defmodule RainerBlogBackend.Article do
     field :is_active, :boolean, default: false
     field :chapter_id, :binary_id
 
+    many_to_many :tags, RainerBlogBackend.Tag, join_through: "articles_tags", on_replace: :delete
+
     timestamps(type: :utc_datetime)
   end
 
@@ -47,6 +49,12 @@ defmodule RainerBlogBackend.Article do
     article
     |> cast(attrs, [:title, :subtitle, :aws_key, :order, :is_active, :chapter_id])
     |> validate_required([:title, :aws_key, :order, :is_active, :chapter_id])
+  end
+
+  def changeset_with_tags(article, attrs, tags) do
+    article
+    |> changeset(attrs)
+    |> put_assoc(:tags, tags)
   end
 
   @doc """
@@ -138,6 +146,24 @@ defmodule RainerBlogBackend.Article do
     |> Repo.insert()
   end
 
+  def create_with_tags(attrs, tags) do
+    %__MODULE__{}
+    |> changeset_with_tags(attrs, tags)
+    |> Repo.insert()
+  end
+
+  def update(article, attrs) do
+    article
+    |> changeset(attrs)
+    |> Repo.update()
+  end
+
+  def update_with_tags(article, attrs, tags) do
+    article
+    |> changeset_with_tags(attrs, tags)
+    |> Repo.update()
+  end
+
   @doc """
   删除文章
   """
@@ -160,6 +186,34 @@ defmodule RainerBlogBackend.Article do
         join: t in "themes",
         on: c.theme_id == t.id,
         where: a.is_active == true and c.is_active == true and t.is_active == true,
+        order_by: [desc: a.inserted_at],
+        select: a
+      )
+
+    query =
+      if page_size == -1 do
+        query
+      else
+        offset = (page - 1) * page_size
+        from q in query, offset: ^offset, limit: ^page_size
+      end
+
+    Repo.all(query)
+  end
+
+  @doc """
+  获取指定Tag下的公开文章列表
+  """
+  def list_public_articles_by_tag(tag_name, page \\ 1, page_size \\ 10) do
+    query =
+      from(
+        a in __MODULE__,
+        join: tags in assoc(a, :tags),
+        join: c in "chapters",
+        on: a.chapter_id == c.id,
+        join: t in "themes",
+        on: c.theme_id == t.id,
+        where: tags.name == ^tag_name and a.is_active == true and c.is_active == true and t.is_active == true,
         order_by: [desc: a.inserted_at],
         select: a
       )

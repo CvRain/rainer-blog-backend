@@ -1,7 +1,7 @@
 defmodule RainerBlogBackendWeb.ArticleController do
   alias RainerBlogBackendWeb.Types.BaseResponse
   use RainerBlogBackendWeb, :controller
-  alias RainerBlogBackend.{Article, AwsService, Chapter, ArticleContentCache}
+  alias RainerBlogBackend.{Article, AwsService, Chapter, ArticleContentCache, Tag}
   import Ecto.Query
 
   def count(conn, _params) do
@@ -26,6 +26,7 @@ defmodule RainerBlogBackendWeb.ArticleController do
     subtitle = request_body["subtitle"]
     chapter_id = request_body["chapter_id"]
     order = request_body["order"] || 0
+    tags_list = request_body["tags"] || []
 
     cond do
       is_nil(title) or title == "" ->
@@ -62,7 +63,15 @@ defmodule RainerBlogBackendWeb.ArticleController do
                 chapter_id: chapter_id
               }
 
-              case Article.create(attrs) do
+              res =
+                if tags_list != [] do
+                  tags = Tag.get_or_create_tags(tags_list)
+                  Article.create_with_tags(attrs, tags)
+                else
+                  Article.create(attrs)
+                end
+
+              case res do
                 {:ok, article} ->
                   # 返回更友好的结构
                   data = %{
@@ -182,6 +191,7 @@ defmodule RainerBlogBackendWeb.ArticleController do
     order = request_body["order"]
     is_active = request_body["is_active"]
     chapter_id = request_body["chapter_id"]
+    tags_list = request_body["tags"]
 
     case Article |> RainerBlogBackend.Repo.get(id) do
       nil ->
@@ -224,7 +234,15 @@ defmodule RainerBlogBackendWeb.ArticleController do
 
             changeset = Ecto.Changeset.change(article, update_attrs)
 
-            case RainerBlogBackend.Repo.update(changeset) do
+            res =
+              if !is_nil(tags_list) do
+                tags = Tag.get_or_create_tags(tags_list)
+                Article.update_with_tags(article, update_attrs, tags)
+              else
+                RainerBlogBackend.Repo.update(changeset)
+              end
+
+            case res do
               {:ok, updated} ->
                 data = %{
                   id: updated.id,

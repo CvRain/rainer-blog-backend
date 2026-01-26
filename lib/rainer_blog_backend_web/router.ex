@@ -90,6 +90,15 @@ defmodule RainerBlogBackendWeb.Router do
     get "/theme/:theme_id/active", ChapterController, :active_by_theme
   end
 
+  # 标签相关接口
+  scope "/api/tags", RainerBlogBackendWeb do
+    pipe_through :api
+    # 获取所有标签
+    get "/", TagController, :index
+    # 获取标签及其文章
+    get "/:name", TagController, :show
+  end
+
   # 收藏集相关接口
   scope "/api/collection", RainerBlogBackendWeb do
     pipe_through :api
