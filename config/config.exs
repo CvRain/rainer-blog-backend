@@ -53,7 +53,14 @@ config :phoenix, :json_library, Jason
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
-import_config "#{config_env()}.exs"
+# import_config "#{config_env()}.exs"
+
+# check #{config_env()}.exs exists
+config_env_file = Path.join([__DIR__, "#{config_env()}.exs"])
+
+if File.exists?(config_env_file) do
+  import_config config_env_file
+end
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the

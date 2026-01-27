@@ -9,6 +9,10 @@ defmodule RainerBlogBackendWeb.Router do
     plug RainerBlogBackendWeb.AuthPlug
   end
 
+  pipeline :openapi do
+    plug OpenApiSpex.Plug.PutApiSpec, module: RainerBlogBackendWeb.ApiSpec
+  end
+
   # 首页
   scope "/", RainerBlogBackendWeb do
     pipe_through :api
@@ -220,5 +224,17 @@ defmodule RainerBlogBackendWeb.Router do
     post "/upload_set", CoverController, :upload_set
     # 删除封面
     delete "/", CoverController, :delete
+  end
+
+  scope "/api" do
+    pipe_through [:api, :openapi]
+
+    get "/openapi", OpenApiSpex.Plug.RenderSpec, []
+  end
+
+  scope "/" do
+    get "/swagger", OpenApiSpex.Plug.SwaggerUI,
+      path: "/api/openapi",
+      title: "Rainer Blog Backend API"
   end
 end

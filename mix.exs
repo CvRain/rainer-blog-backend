@@ -51,7 +51,8 @@ defmodule RainerBlogBackend.MixProject do
       {:cors_plug, "~> 3.0"},
       {:ex_aws, "~> 2.5"},
       {:ex_aws_s3, "~> 2.4"},
-      {:hackney, "~> 1.20"}
+      {:hackney, "~> 1.20"},
+      {:open_api_spex, "~> 3.18"}
     ]
   end
 
