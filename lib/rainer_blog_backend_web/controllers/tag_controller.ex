@@ -10,8 +10,8 @@ defmodule RainerBlogBackendWeb.TagController do
   tags(["tags"])
 
   operation(:index,
-    summary: "List all tags",
-    description: "Get a list of all tags available in the blog.",
+    summary: "列出所有的标签",
+    description: "列出在博客文章中存在的所有标签",
     responses: [
       ok: {"Tag list", "application/json", TagResponse}
     ]
@@ -23,8 +23,8 @@ defmodule RainerBlogBackendWeb.TagController do
   end
 
   operation(:show,
-    summary: "Get tag details and articles",
-    description: "Get detials of a specific tag and the list of articles associated with it.",
+    summary: "通过标签获得文章相关信息",
+    description: "获取特定标签的详细信息以及与之关联的文章列表。",
     parameters: [
       name: [
         in: :path,

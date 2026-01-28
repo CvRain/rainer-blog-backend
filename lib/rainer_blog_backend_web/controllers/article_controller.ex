@@ -1,8 +1,31 @@
 defmodule RainerBlogBackendWeb.ArticleController do
-  alias RainerBlogBackendWeb.Types.BaseResponse
   use RainerBlogBackendWeb, :controller
+  use OpenApiSpex.ControllerSpecs
+
+  alias RainerBlogBackendWeb.Types.BaseResponse
   alias RainerBlogBackend.{Article, AwsService, Chapter, ArticleContentCache, Tag}
+
+  alias RainerBlogBackendWeb.Schemas.{
+    ArticleResponse,
+    ArticleListResponse,
+    ArticleCountResponse,
+    ArticleParams,
+    ArticleUpdateParams
+  }
+
+  alias RainerBlogBackendWeb.Schemas.BaseResponse, as: BaseResponseSchema
+
   import Ecto.Query
+
+  tags(["articles"])
+
+  operation(:count,
+    summary: "Get article count",
+    description: "Get the total number of articles.",
+    responses: [
+      ok: {"Count", "application/json", ArticleCountResponse}
+    ]
+  )
 
   def count(conn, _params) do
     data = %{
@@ -12,6 +35,14 @@ defmodule RainerBlogBackendWeb.ArticleController do
     json(conn, BaseResponse.generate(200, "200Ok", data))
   end
 
+  operation(:count_this_week,
+    summary: "Get article count for this week",
+    description: "Get the number of articles created this week.",
+    responses: [
+      ok: {"Count", "application/json", ArticleCountResponse}
+    ]
+  )
+
   def count_this_week(conn, _params) do
     data = %{
       count: Article.count_append_weekly()
@@ -19,6 +50,16 @@ defmodule RainerBlogBackendWeb.ArticleController do
 
     json(conn, BaseResponse.generate(200, "200Ok", data))
   end
+
+  operation(:create,
+    summary: "Create an article",
+    description: "Create a new article.",
+    request_body: {"Article params", "application/json", ArticleParams},
+    responses: [
+      created: {"Article", "application/json", ArticleResponse},
+      bad_request: {"Bad Request", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def create(conn, _params) do
     request_body = conn.body_params
@@ -106,6 +147,22 @@ defmodule RainerBlogBackendWeb.ArticleController do
     end
   end
 
+  operation(:public_show,
+    summary: "Get public article",
+    description: "Get a public article by ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Article ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Article", "application/json", ArticleResponse},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def public_show(conn, %{"id" => id}) do
     case Article.get_public_article(id) do
       nil ->
@@ -115,6 +172,22 @@ defmodule RainerBlogBackendWeb.ArticleController do
         render_article_response(conn, article)
     end
   end
+
+  operation(:private_show,
+    summary: "Get article (Admin)",
+    description: "Get any article by ID (Admin only).",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Article ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Article", "application/json", ArticleResponse},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def private_show(conn, %{"id" => id}) do
     case Article.get_article(id) do
@@ -157,6 +230,22 @@ defmodule RainerBlogBackendWeb.ArticleController do
     end
   end
 
+  operation(:delete,
+    summary: "Delete an article",
+    description: "Delete an article by ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Article ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Deleted", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def delete(conn, %{"id" => id}) do
     case Article |> RainerBlogBackend.Repo.get(id) do
       nil ->
@@ -178,6 +267,16 @@ defmodule RainerBlogBackendWeb.ArticleController do
         end
     end
   end
+
+  operation(:update,
+    summary: "Update an article",
+    description: "Update an existing article.",
+    request_body: {"Update params", "application/json", ArticleUpdateParams},
+    responses: [
+      ok: {"Article", "application/json", ArticleResponse},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def update(conn, _param) do
     request_body = conn.body_params
@@ -272,6 +371,26 @@ defmodule RainerBlogBackendWeb.ArticleController do
     end
   end
 
+  operation(:list,
+    summary: "List all articles (Auth)",
+    description: "List all articles (requires authentication).",
+    parameters: [
+      page: [
+        in: :query,
+        description: "Page number",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 1}
+      ],
+      page_size: [
+        in: :query,
+        description: "Page size",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 10}
+      ]
+    ],
+    responses: [
+      ok: {"Article List", "application/json", ArticleListResponse}
+    ]
+  )
+
   # 登录后可用的分页接口
   def list(conn, params) do
     page = (params["page"] || 1) |> to_int() |> max(1)
@@ -293,6 +412,26 @@ defmodule RainerBlogBackendWeb.ArticleController do
 
     json(conn, BaseResponse.generate(200, "200OK", articles))
   end
+
+  operation(:public_list,
+    summary: "List public articles",
+    description: "List active articles from active chapters and themes.",
+    parameters: [
+      page: [
+        in: :query,
+        description: "Page number",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 1}
+      ],
+      page_size: [
+        in: :query,
+        description: "Page size",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 10}
+      ]
+    ],
+    responses: [
+      ok: {"Article List", "application/json", ArticleListResponse}
+    ]
+  )
 
   # 公开接口：只返回 is_active 为 true 的文章，无需登录
   def public_list(conn, params) do
