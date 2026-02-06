@@ -1,6 +1,11 @@
 defmodule RainerBlogBackendWeb.S3Controller do
   use RainerBlogBackendWeb, :controller
+  use OpenApiSpex.ControllerSpecs
   alias RainerBlogBackend.UserConfig
+  alias RainerBlogBackendWeb.Schemas.{S3Config, S3ConfigResponse}
+  alias RainerBlogBackendWeb.Schemas.BaseResponse, as: BaseResponseSchema
+
+  tags(["s3"])
 
   # 内网 IP 校验
   defp internal_ip?(conn) do
@@ -19,6 +24,16 @@ defmodule RainerBlogBackendWeb.S3Controller do
              false
          end)
   end
+
+  operation(:update_config,
+    summary: "Update S3 config",
+    description: "Update AWS/OBS configuration (internal only).",
+    request_body: {"S3 config", "application/json", S3Config},
+    responses: [
+      ok: {"Config", "application/json", S3ConfigResponse},
+      forbidden: {"Forbidden", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def update_config(conn, params) do
     if internal_ip?(conn) do
@@ -44,6 +59,15 @@ defmodule RainerBlogBackendWeb.S3Controller do
       |> json(%{code: 403, msg: "forbidden", data: nil})
     end
   end
+
+  operation(:get_config,
+    summary: "Get S3 config",
+    description: "Get AWS/OBS configuration (internal only).",
+    responses: [
+      ok: {"Config", "application/json", S3ConfigResponse},
+      forbidden: {"Forbidden", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def get_config(conn, _params) do
     if internal_ip?(conn) do

@@ -1,11 +1,26 @@
 defmodule RainerBlogBackendWeb.CoverController do
   use RainerBlogBackendWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias RainerBlogBackend.{Cover, Resource, Collection, AwsService}
   alias RainerBlogBackendWeb.Types.BaseResponse
+  alias RainerBlogBackendWeb.Schemas.BaseResponse, as: BaseResponseSchema
+  alias RainerBlogBackendWeb.Schemas.CoverSetParams
+
+  tags(["covers"])
 
   # POST /api/cover/set
   # body: {"owner_type": "theme|chapter|article", "owner_id": "uuid", "resource_id": "uuid"}
+  operation(:set,
+    summary: "Set cover",
+    description: "Set cover by owner type and resource.",
+    request_body: {"Cover params", "application/json", CoverSetParams},
+    responses: [
+      ok: {"Cover", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def set(conn, %{
         "owner_type" => owner_type,
         "owner_id" => owner_id,
@@ -34,6 +49,27 @@ defmodule RainerBlogBackendWeb.CoverController do
   end
 
   # GET /api/cover/url?owner_type=theme&owner_id=...
+  operation(:url,
+    summary: "Get cover URL",
+    description: "Get presigned URL by owner.",
+    parameters: [
+      owner_type: [
+        in: :query,
+        description: "Owner type",
+        schema: %OpenApiSpex.Schema{type: :string}
+      ],
+      owner_id: [
+        in: :query,
+        description: "Owner ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"URL", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def url(conn, %{"owner_type" => owner_type, "owner_id" => owner_id}) do
     case Cover.get_presigned_url_by_owner(owner_type, owner_id) do
       {:ok, {:ok, url}} ->
@@ -56,6 +92,26 @@ defmodule RainerBlogBackendWeb.CoverController do
   end
 
   # DELETE /api/cover?owner_type=theme&owner_id=...
+  operation(:delete,
+    summary: "Delete cover",
+    description: "Delete cover by owner.",
+    parameters: [
+      owner_type: [
+        in: :query,
+        description: "Owner type",
+        schema: %OpenApiSpex.Schema{type: :string}
+      ],
+      owner_id: [
+        in: :query,
+        description: "Owner ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Deleted", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def delete(conn, %{"owner_type" => owner_type, "owner_id" => owner_id}) do
     case Cover.delete_by_owner(owner_type, owner_id) do
       {:ok, _} ->
@@ -67,6 +123,26 @@ defmodule RainerBlogBackendWeb.CoverController do
   end
 
   # GET /api/cover/articles?page=1&page_size=10
+  operation(:articles,
+    summary: "List article covers",
+    description: "Get article covers with pagination.",
+    parameters: [
+      page: [
+        in: :query,
+        description: "Page number",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 1}
+      ],
+      page_size: [
+        in: :query,
+        description: "Page size",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 10}
+      ]
+    ],
+    responses: [
+      ok: {"Cover list", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def articles(conn, params) do
     page = (params["page"] || 1) |> to_int()
     page_size = (params["page_size"] || 10) |> to_int()
@@ -76,6 +152,22 @@ defmodule RainerBlogBackendWeb.CoverController do
   end
 
   # GET /api/cover/article/:id
+  operation(:article,
+    summary: "Get article cover",
+    description: "Get cover by article ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Article ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Cover", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def article(conn, %{"id" => id}) do
     case Cover.get_cover_info("article", id) do
       {:ok, info} ->
@@ -93,6 +185,22 @@ defmodule RainerBlogBackendWeb.CoverController do
   end
 
   # GET /api/cover/theme/:id
+  operation(:theme,
+    summary: "Get theme cover",
+    description: "Get cover by theme ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Theme ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Cover", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def theme(conn, %{"id" => id}) do
     case Cover.get_cover_info("theme", id) do
       {:ok, info} ->
@@ -110,6 +218,22 @@ defmodule RainerBlogBackendWeb.CoverController do
   end
 
   # GET /api/cover/chapter/:id
+  operation(:chapter,
+    summary: "Get chapter cover",
+    description: "Get cover by chapter ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Chapter ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Cover", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def chapter(conn, %{"id" => id}) do
     case Cover.get_cover_info("chapter", id) do
       {:ok, info} ->
@@ -127,12 +251,42 @@ defmodule RainerBlogBackendWeb.CoverController do
   end
 
   # GET /api/cover/theme/:id/chapters
+  operation(:theme_chapters,
+    summary: "Get theme chapter covers",
+    description: "Get chapter covers by theme ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Theme ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Cover list", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def theme_chapters(conn, %{"id" => id}) do
     data = Cover.get_chapter_covers_by_theme(id)
     json(conn, BaseResponse.generate(200, "ok", data))
   end
 
   # GET /api/cover/chapter/:id/articles
+  operation(:chapter_articles,
+    summary: "Get chapter article covers",
+    description: "Get article covers by chapter ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Chapter ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Cover list", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def chapter_articles(conn, %{"id" => id}) do
     data = Cover.get_article_covers_by_chapter(id)
     json(conn, BaseResponse.generate(200, "ok", data))
@@ -144,6 +298,26 @@ defmodule RainerBlogBackendWeb.CoverController do
 
   # GET /api/cover/resources?page=1&page_size=20
   # 获取所有可用的封面资源列表（从 covers collection）
+  operation(:resources,
+    summary: "List cover resources",
+    description: "Get available cover resources with pagination.",
+    parameters: [
+      page: [
+        in: :query,
+        description: "Page number",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 1}
+      ],
+      page_size: [
+        in: :query,
+        description: "Page size",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 20}
+      ]
+    ],
+    responses: [
+      ok: {"Resources", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def resources(conn, params) do
     page = (params["page"] || 1) |> to_int()
     page_size = (params["page_size"] || 20) |> to_int()
@@ -213,6 +387,15 @@ defmodule RainerBlogBackendWeb.CoverController do
 
   # POST /api/cover/upload_set
   # multipart form-data: file + owner_type + owner_id
+  operation(:upload_set,
+    summary: "Upload and set cover",
+    description: "Upload cover image and set it for an owner (multipart/form-data).",
+    responses: [
+      ok: {"Cover", "application/json", BaseResponseSchema},
+      bad_request: {"Bad Request", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def upload_set(
         conn,
         %{"file" => file_param, "owner_type" => owner_type, "owner_id" => owner_id} = params

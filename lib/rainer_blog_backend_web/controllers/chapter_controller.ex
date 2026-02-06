@@ -1,11 +1,30 @@
 defmodule RainerBlogBackendWeb.ChapterController do
   use RainerBlogBackendWeb, :controller
+  use OpenApiSpex.ControllerSpecs
+
   alias RainerBlogBackendWeb.Types.BaseResponse
   alias RainerBlogBackend.Chapter
+  alias RainerBlogBackendWeb.Schemas.BaseResponse, as: BaseResponseSchema
 
-  @doc """
-  创建一个新的Chapter
-  """
+  alias RainerBlogBackendWeb.Schemas.{
+    ChapterResponse,
+    ChapterListResponse,
+    ChapterParams,
+    ChapterUpdateParams
+  }
+
+  tags(["chapters"])
+
+  operation(:create,
+    summary: "Create chapter",
+    description: "Create a new chapter.",
+    request_body: {"Chapter params", "application/json", ChapterParams},
+    responses: [
+      created: {"Chapter", "application/json", ChapterResponse},
+      bad_request: {"Bad Request", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def create(conn, params) do
     case Chapter.create(params) do
       {:ok, chapter} ->
@@ -26,9 +45,26 @@ defmodule RainerBlogBackendWeb.ChapterController do
     end
   end
 
-  @doc """
-  获取所有Chapter，支持分页
-  """
+  operation(:index,
+    summary: "List chapters",
+    description: "Get all chapters with pagination.",
+    parameters: [
+      page: [
+        in: :query,
+        description: "Page number",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 1}
+      ],
+      page_size: [
+        in: :query,
+        description: "Page size",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 10}
+      ]
+    ],
+    responses: [
+      ok: {"Chapter list", "application/json", ChapterListResponse}
+    ]
+  )
+
   def index(conn, params) do
     page = Map.get(params, "page", "1") |> String.to_integer()
     page_size = Map.get(params, "page_size", "10") |> String.to_integer()
@@ -37,9 +73,26 @@ defmodule RainerBlogBackendWeb.ChapterController do
     json(conn, BaseResponse.generate(200, "200OK", chapters))
   end
 
-  @doc """
-  获取所有激活的Chapter，支持分页
-  """
+  operation(:active,
+    summary: "List active chapters",
+    description: "Get active chapters with pagination.",
+    parameters: [
+      page: [
+        in: :query,
+        description: "Page number",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 1}
+      ],
+      page_size: [
+        in: :query,
+        description: "Page size",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 10}
+      ]
+    ],
+    responses: [
+      ok: {"Chapter list", "application/json", ChapterListResponse}
+    ]
+  )
+
   def active(conn, params) do
     page = Map.get(params, "page", "1") |> String.to_integer()
     page_size = Map.get(params, "page_size", "10") |> String.to_integer()
@@ -48,9 +101,31 @@ defmodule RainerBlogBackendWeb.ChapterController do
     json(conn, BaseResponse.generate(200, "200OK", chapters))
   end
 
-  @doc """
-  获取指定theme下的所有Chapter
-  """
+  operation(:by_theme,
+    summary: "List chapters by theme",
+    description: "Get chapters by theme with pagination.",
+    parameters: [
+      theme_id: [
+        in: :path,
+        description: "Theme ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ],
+      page: [
+        in: :query,
+        description: "Page number",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 1}
+      ],
+      page_size: [
+        in: :query,
+        description: "Page size",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 10}
+      ]
+    ],
+    responses: [
+      ok: {"Chapter list", "application/json", ChapterListResponse}
+    ]
+  )
+
   def by_theme(conn, %{"theme_id" => theme_id} = params) do
     page = Map.get(params, "page", "1") |> String.to_integer()
     page_size = Map.get(params, "page_size", "10") |> String.to_integer()
@@ -59,9 +134,31 @@ defmodule RainerBlogBackendWeb.ChapterController do
     json(conn, BaseResponse.generate(200, "200OK", chapters))
   end
 
-  @doc """
-  获取指定theme下激活的Chapter
-  """
+  operation(:active_by_theme,
+    summary: "List active chapters by theme",
+    description: "Get active chapters by theme with pagination.",
+    parameters: [
+      theme_id: [
+        in: :path,
+        description: "Theme ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ],
+      page: [
+        in: :query,
+        description: "Page number",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 1}
+      ],
+      page_size: [
+        in: :query,
+        description: "Page size",
+        schema: %OpenApiSpex.Schema{type: :integer, default: 10}
+      ]
+    ],
+    responses: [
+      ok: {"Chapter list", "application/json", ChapterListResponse}
+    ]
+  )
+
   def active_by_theme(conn, %{"theme_id" => theme_id} = params) do
     page = Map.get(params, "page", "1") |> String.to_integer()
     page_size = Map.get(params, "page_size", "10") |> String.to_integer()
@@ -70,9 +167,22 @@ defmodule RainerBlogBackendWeb.ChapterController do
     json(conn, BaseResponse.generate(200, "200OK", chapters))
   end
 
-  @doc """
-  删除指定的Chapter
-  """
+  operation(:delete,
+    summary: "Delete chapter",
+    description: "Delete a chapter by ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Chapter ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Deleted", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def delete(conn, %{"id" => id}) do
     case Chapter.delete(id) do
       {:ok, _chapter} ->
@@ -83,9 +193,16 @@ defmodule RainerBlogBackendWeb.ChapterController do
     end
   end
 
-  @doc """
-  更新指定的Chapter
-  """
+  operation(:update,
+    summary: "Update chapter",
+    description: "Update a chapter.",
+    request_body: {"Update params", "application/json", ChapterUpdateParams},
+    responses: [
+      ok: {"Chapter", "application/json", ChapterResponse},
+      bad_request: {"Bad Request", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def update(conn, _params) do
     request_body = conn.body_params
     id = request_body["id"]

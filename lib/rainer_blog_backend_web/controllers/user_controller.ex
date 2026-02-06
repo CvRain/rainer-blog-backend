@@ -1,8 +1,28 @@
 defmodule RainerBlogBackendWeb.UserController do
   use RainerBlogBackendWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias RainerBlogBackendWeb.Types.BaseResponse
   alias RainerBlogBackend.User
+  alias RainerBlogBackendWeb.Schemas.BaseResponse, as: BaseResponseSchema
+
+  alias RainerBlogBackendWeb.Schemas.{
+    UserResponse,
+    UserLoginResponse,
+    UserLoginParams,
+    UserUpdateParams
+  }
+
+  tags(["users"])
+
+  operation(:show,
+    summary: "Get user",
+    description: "Get user info.",
+    responses: [
+      ok: {"User", "application/json", UserResponse},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def show(conn, _params) do
     case User.get_user() do
@@ -14,6 +34,16 @@ defmodule RainerBlogBackendWeb.UserController do
         json(conn, BaseResponse.generate(200, "获取用户信息成功", safe_user))
     end
   end
+
+  operation(:update,
+    summary: "Update user",
+    description: "Update user info.",
+    request_body: {"User update params", "application/json", UserUpdateParams},
+    responses: [
+      ok: {"User", "application/json", UserResponse},
+      bad_request: {"Bad Request", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def update(conn, _params) do
     try do
@@ -55,6 +85,16 @@ defmodule RainerBlogBackendWeb.UserController do
     end
   end
 
+  operation(:login,
+    summary: "Login",
+    description: "Login and get token.",
+    request_body: {"Login params", "application/json", UserLoginParams},
+    responses: [
+      ok: {"Login", "application/json", UserLoginResponse},
+      unauthorized: {"Unauthorized", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def login(conn, _params) do
     try do
       user_name = conn.body_params["user_name"]
@@ -91,6 +131,22 @@ defmodule RainerBlogBackendWeb.UserController do
         json(conn, BaseResponse.generate(500, "服务器内部错误: #{inspect(e)}", nil))
     end
   end
+
+  operation(:verify_token,
+    summary: "Verify token",
+    description: "Verify authorization token.",
+    parameters: [
+      authorization: [
+        in: :header,
+        description: "Bearer token",
+        schema: %OpenApiSpex.Schema{type: :string}
+      ]
+    ],
+    responses: [
+      ok: {"Claims", "application/json", BaseResponseSchema},
+      unauthorized: {"Unauthorized", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def verify_token(conn, _params) do
     try do

@@ -67,56 +67,19 @@ defmodule RainerBlogBackendWeb.Schemas.ArticleUpdateParams do
 end
 
 defmodule RainerBlogBackendWeb.Schemas.ArticleResponse do
-  require OpenApiSpex
-  alias OpenApiSpex.Schema
   alias RainerBlogBackendWeb.Schemas.Article
-
-  OpenApiSpex.schema(%{
-    title: "ArticleResponse",
-    description: "Response containing a single article",
-    type: :object,
-    properties: %{
-      code: %Schema{type: :integer, example: 200},
-      message: %Schema{type: :string, example: "OK"},
-      data: Article
-    }
-  })
+  use RainerBlogBackendWeb.Schemas.ResponseFactory, data: Article
 end
 
 defmodule RainerBlogBackendWeb.Schemas.ArticleCountResponse do
-  require OpenApiSpex
-  alias OpenApiSpex.Schema
-
-  OpenApiSpex.schema(%{
-    title: "ArticleCountResponse",
-    description: "Response containing count",
-    type: :object,
-    properties: %{
-      code: %Schema{type: :integer, example: 200},
-      message: %Schema{type: :string, example: "OK"},
-      data: %Schema{
-        type: :object,
-        properties: %{
-          count: %Schema{type: :integer}
-        }
-      }
+  use RainerBlogBackendWeb.Schemas.ResponseFactory,
+    data: %OpenApiSpex.Schema{
+      type: :object,
+      properties: %{count: %OpenApiSpex.Schema{type: :integer}}
     }
-  })
 end
 
 defmodule RainerBlogBackendWeb.Schemas.ArticleListResponse do
-  require OpenApiSpex
-  alias OpenApiSpex.Schema
   alias RainerBlogBackendWeb.Schemas.Article
-
-  OpenApiSpex.schema(%{
-    title: "ArticleListResponse",
-    description: "Response containing a list of articles",
-    type: :object,
-    properties: %{
-      code: %Schema{type: :integer, example: 200},
-      message: %Schema{type: :string, example: "OK"},
-      data: %Schema{type: :array, items: Article}
-    }
-  })
+  use RainerBlogBackendWeb.Schemas.ResponseFactory, data: Article, list: true
 end

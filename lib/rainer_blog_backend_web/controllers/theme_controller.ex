@@ -1,8 +1,30 @@
 defmodule RainerBlogBackendWeb.ThemeController do
   use RainerBlogBackendWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias RainerBlogBackend.Theme
   alias RainerBlogBackendWeb.Types.BaseResponse
+  alias RainerBlogBackendWeb.Schemas.BaseResponse, as: BaseResponseSchema
+
+  alias RainerBlogBackendWeb.Schemas.{
+    ThemeResponse,
+    ThemeListResponse,
+    ThemeParams,
+    ThemeUpdateParams,
+    CountResponse
+  }
+
+  tags(["themes"])
+
+  operation(:create,
+    summary: "Create theme",
+    description: "Create a new theme.",
+    request_body: {"Theme params", "application/json", ThemeParams},
+    responses: [
+      created: {"Theme", "application/json", ThemeResponse},
+      bad_request: {"Bad Request", "application/json", BaseResponseSchema}
+    ]
+  )
 
   @spec create(Plug.Conn.t(), any()) :: Plug.Conn.t()
   def create(conn, _params) do
@@ -38,10 +60,26 @@ defmodule RainerBlogBackendWeb.ThemeController do
     end
   end
 
+  operation(:all_themes,
+    summary: "List themes",
+    description: "Get all themes.",
+    responses: [
+      ok: {"Theme list", "application/json", ThemeListResponse}
+    ]
+  )
+
   def all_themes(conn, _params) do
     themes = Theme.get_all()
     json(conn, BaseResponse.generate(200, "200OK", themes))
   end
+
+  operation(:active_themes,
+    summary: "List active themes",
+    description: "Get all active themes.",
+    responses: [
+      ok: {"Theme list", "application/json", ThemeListResponse}
+    ]
+  )
 
   def active_themes(conn, _params) do
     themes =
@@ -51,10 +89,34 @@ defmodule RainerBlogBackendWeb.ThemeController do
     json(conn, BaseResponse.generate(200, "200OK", themes))
   end
 
+  operation(:one_theme,
+    summary: "Get theme",
+    description: "Get a theme by ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Theme ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Theme", "application/json", ThemeResponse}
+    ]
+  )
+
   def one_theme(conn, %{"id" => id}) do
     theme = Theme.get_one(id)
     json(conn, BaseResponse.generate(200, "200OK", theme))
   end
+
+  operation(:remove,
+    summary: "Remove theme",
+    description: "Remove a theme by ID.",
+    request_body: {"Remove params", "application/json", ThemeUpdateParams},
+    responses: [
+      ok: {"Removed", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def remove(conn, _params) do
     remove_id = conn.body_params["id"]
@@ -68,6 +130,14 @@ defmodule RainerBlogBackendWeb.ThemeController do
     end
   end
 
+  operation(:count,
+    summary: "Get theme count",
+    description: "Get total number of themes.",
+    responses: [
+      ok: {"Count", "application/json", CountResponse}
+    ]
+  )
+
   def count(conn, _params) do
     count = Theme.count()
 
@@ -78,6 +148,14 @@ defmodule RainerBlogBackendWeb.ThemeController do
     json(conn, BaseResponse.generate(200, "200OK", response))
   end
 
+  operation(:count_this_week,
+    summary: "Get weekly theme count",
+    description: "Get number of themes created this week.",
+    responses: [
+      ok: {"Count", "application/json", CountResponse}
+    ]
+  )
+
   def count_this_week(conn, _params) do
     count = Theme.count_append_weekly()
 
@@ -87,6 +165,16 @@ defmodule RainerBlogBackendWeb.ThemeController do
 
     json(conn, BaseResponse.generate(200, "200OK", response))
   end
+
+  operation(:update,
+    summary: "Update theme",
+    description: "Update a theme.",
+    request_body: {"Update params", "application/json", ThemeUpdateParams},
+    responses: [
+      ok: {"Theme", "application/json", ThemeResponse},
+      bad_request: {"Bad Request", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def update(conn, _params) do
     request_body = conn.body_params
@@ -163,15 +251,47 @@ defmodule RainerBlogBackendWeb.ThemeController do
 
   defp parse_boolean(_, default), do: default
 
+  operation(:all_themes_with_stats,
+    summary: "List themes with stats",
+    description: "Get all themes with statistics.",
+    responses: [
+      ok: {"Theme list", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def all_themes_with_stats(conn, _params) do
     themes = Theme.get_all_with_stats()
     json(conn, BaseResponse.generate(200, "200OK", themes))
   end
 
+  operation(:all_themes_with_details,
+    summary: "List themes with details",
+    description: "Get all themes with details.",
+    responses: [
+      ok: {"Theme list", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def all_themes_with_details(conn, _params) do
     themes = Theme.get_all_with_details()
     json(conn, BaseResponse.generate(200, "200OK", themes))
   end
+
+  operation(:one_theme_with_details,
+    summary: "Get theme details",
+    description: "Get theme details by ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Theme ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Theme details", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def one_theme_with_details(conn, %{"id" => id}) do
     case Theme.get_active_details(id) do
@@ -182,6 +302,22 @@ defmodule RainerBlogBackendWeb.ThemeController do
         json(conn, BaseResponse.generate(200, "200OK", theme_details))
     end
   end
+
+  operation(:public_active_details,
+    summary: "Get active theme details (public)",
+    description: "Get active theme details by ID (public).",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Theme ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Theme details", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def public_active_details(conn, %{"id" => id}) do
     case Theme.get_active_details(id) do

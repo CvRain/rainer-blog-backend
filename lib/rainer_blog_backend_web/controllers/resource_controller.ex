@@ -1,13 +1,40 @@
 defmodule RainerBlogBackendWeb.ResourceController do
   use RainerBlogBackendWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias RainerBlogBackend.{Resource, AwsService}
   alias RainerBlogBackendWeb.Types.BaseResponse
+  alias RainerBlogBackendWeb.Schemas.BaseResponse, as: BaseResponseSchema
+  alias RainerBlogBackendWeb.Schemas.{ResourceResponse, ResourceListResponse, ResourceParams}
+
+  tags(["resources"])
+
+  operation(:index,
+    summary: "List resources",
+    description: "Get all resources.",
+    responses: [
+      ok: {"Resource list", "application/json", ResourceListResponse}
+    ]
+  )
 
   def index(conn, _params) do
     resources = Resource.list_resources()
     json(conn, BaseResponse.generate(200, "200Ok", resources))
   end
+
+  operation(:create,
+    summary: "Create resource",
+    description: "Create a new resource.",
+    request_body: {
+      "Resource params",
+      "application/json",
+      %OpenApiSpex.Schema{type: :object, properties: %{resource: ResourceParams}}
+    },
+    responses: [
+      created: {"Resource", "application/json", ResourceResponse},
+      bad_request: {"Bad Request", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def create(conn, %{"resource" => resource_params}) do
     with {:ok, %Resource{} = resource} <- Resource.create_resource(resource_params) do
@@ -42,6 +69,15 @@ defmodule RainerBlogBackendWeb.ResourceController do
   # order: [可选的排序]
   # is_active: [true|false，默认为 true]
   # collection_id: [可选的集合 ID]
+  operation(:upload,
+    summary: "Upload resource",
+    description: "Upload a resource file (multipart/form-data).",
+    responses: [
+      created: {"Resource", "application/json", ResourceResponse},
+      bad_request: {"Bad Request", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def upload(conn, %{"file" => file_param} = params) do
     # 获取文件信息
     filename = file_param.filename
@@ -103,6 +139,22 @@ defmodule RainerBlogBackendWeb.ResourceController do
     end
   end
 
+  operation(:show,
+    summary: "Get resource",
+    description: "Get a resource by ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Resource ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Resource", "application/json", ResourceResponse},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def show(conn, %{"id" => id}) do
     case Resource.get_resource(id) do
       nil ->
@@ -128,6 +180,22 @@ defmodule RainerBlogBackendWeb.ResourceController do
   end
 
   # 下载资源文件
+  operation(:download,
+    summary: "Download resource",
+    description: "Download a resource by ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Resource ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"File", "application/octet-stream", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def download(conn, %{"id" => id}) do
     case Resource.get_resource(id) do
       nil ->
@@ -149,6 +217,22 @@ defmodule RainerBlogBackendWeb.ResourceController do
   end
 
   # 获取资源的预签名URL
+  operation(:get_url,
+    summary: "Get resource URL",
+    description: "Get a presigned URL for a resource.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Resource ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"URL", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def get_url(conn, %{"id" => id}) do
     case Resource.get_resource(id) do
       nil ->
@@ -173,6 +257,22 @@ defmodule RainerBlogBackendWeb.ResourceController do
   end
 
   # 获取资源的Base64编码内容
+  operation(:get_base64,
+    summary: "Get resource base64",
+    description: "Get base64 content for a resource.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Resource ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Base64", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
+
   def get_base64(conn, %{"id" => id}) do
     case Resource.get_resource(id) do
       nil ->
@@ -195,6 +295,27 @@ defmodule RainerBlogBackendWeb.ResourceController do
         end
     end
   end
+
+  operation(:update,
+    summary: "Update resource",
+    description: "Update a resource by ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Resource ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    request_body: {
+      "Resource params",
+      "application/json",
+      %OpenApiSpex.Schema{type: :object, properties: %{resource: ResourceParams}}
+    },
+    responses: [
+      ok: {"Resource", "application/json", ResourceResponse},
+      bad_request: {"Bad Request", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def update(conn, %{"id" => id, "resource" => resource_params}) do
     case Resource.get_resource(id) do
@@ -221,6 +342,22 @@ defmodule RainerBlogBackendWeb.ResourceController do
         end
     end
   end
+
+  operation(:delete,
+    summary: "Delete resource",
+    description: "Delete a resource by ID.",
+    parameters: [
+      id: [
+        in: :path,
+        description: "Resource ID",
+        schema: %OpenApiSpex.Schema{type: :string, format: :uuid}
+      ]
+    ],
+    responses: [
+      ok: {"Deleted", "application/json", BaseResponseSchema},
+      not_found: {"Not Found", "application/json", BaseResponseSchema}
+    ]
+  )
 
   def delete(conn, %{"id" => id}) do
     case Resource.get_resource(id) do

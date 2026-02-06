@@ -1,7 +1,19 @@
 defmodule RainerBlogBackendWeb.OtherPageController do
   use RainerBlogBackendWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias RainerBlogBackendWeb.Types.BaseResponse
+  alias RainerBlogBackendWeb.Schemas.{MainInfoResponse, StorageOverviewResponse}
+
+  tags(["system"])
+
+  operation(:main,
+    summary: "Homepage info",
+    description: "Basic service info.",
+    responses: [
+      ok: {"Info", "application/json", MainInfoResponse}
+    ]
+  )
 
   def main(conn, _params) do
     data = %{
@@ -17,6 +29,14 @@ defmodule RainerBlogBackendWeb.OtherPageController do
 
     json(conn, response)
   end
+
+  operation(:storage_overview,
+    summary: "Storage overview",
+    description: "Get system overview counts.",
+    responses: [
+      ok: {"Overview", "application/json", StorageOverviewResponse}
+    ]
+  )
 
   def storage_overview(conn, _params) do
     data = %{
